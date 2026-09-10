@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -148,7 +146,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.04-tabdiv"
+Library.Version = "2026.09.04-overview"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2386,6 +2384,113 @@ function Window:Tab(name, icon)
 	return tab
 end
 
+function Window:Overview(opts)
+	opts = opts or {}
+
+	local MarketplaceService = game:GetService("MarketplaceService")
+	local tab = self:Tab({ Title = opts.Title or "overview", Icon = opts.Icon or "layout-dashboard" })
+
+	-- account card
+	local account = tab:Section(opts.AccountTitle or "account", "full")
+
+	local card = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 64),
+		BackgroundTransparency = 1,
+		Parent = account.Container,
+	})
+
+	local avatar = New("ImageLabel", {
+		Size = UDim2.fromOffset(64, 64),
+		BackgroundColor3 = Theme.Field,
+		BorderSizePixel = 0,
+		Parent = card,
+	})
+	Corner(avatar, 8)
+	Stroke(avatar, Theme.Border)
+
+	local nameLabel = Label(card, LocalPlayer.DisplayName, Theme.TextBright, Theme.TextSize + 2, Theme.FontMedium)
+	nameLabel.Position = UDim2.fromOffset(78, 6)
+	nameLabel.Size = UDim2.new(1, -160, 0, 20)
+
+	local userLabel = Label(card, "@" .. LocalPlayer.Name, Theme.Text)
+	userLabel.Position = UDim2.fromOffset(78, 27)
+	userLabel.Size = UDim2.new(1, -160, 0, 18)
+
+	local metaLabel = Label(card, "", Theme.TextDim, Theme.TextSize - 1)
+	metaLabel.Position = UDim2.fromOffset(78, 45)
+	metaLabel.Size = UDim2.new(1, -160, 0, 16)
+	metaLabel.Text = string.format("%d days  -  ID %d", LocalPlayer.AccountAge, LocalPlayer.UserId)
+
+	local status = Label(card, opts.Status or "Ready", Theme.TextCode)
+	status.AnchorPoint = Vector2.new(1, 0)
+	status.Position = UDim2.new(1, 0, 0, 6)
+	status.Size = UDim2.fromOffset(90, 18)
+	status.TextXAlignment = Enum.TextXAlignment.Right
+
+	task.spawn(function()
+		local ok, image = pcall(function()
+			return Players:GetUserThumbnailAsync(
+				LocalPlayer.UserId,
+				Enum.ThumbnailType.HeadShot,
+				Enum.ThumbnailSize.Size150x150)
+		end)
+		if ok and image then avatar.Image = image end
+	end)
+
+	-- game and server
+	local gameSection = tab:Section(opts.GameTitle or "game", 1)
+	local gameName = gameSection:Label("loading...", { Style = "bright" })
+	gameSection:Label("place " .. tostring(game.PlaceId), { Style = "dim" })
+
+	task.spawn(function()
+		local ok, info = pcall(function()
+			return MarketplaceService:GetProductInfo(game.PlaceId)
+		end)
+		if ok and info and info.Name then
+			gameName:Set(info.Name)
+		else
+			gameName:Set("unknown")
+		end
+	end)
+
+	local serverSection = tab:Section(opts.ServerTitle or "server", 2)
+	local playerCount = serverSection:Label("", { Style = "bright" })
+	serverSection:Label(opts.ServerStatus or "connected", { Style = "success" })
+
+	local function refreshPlayers()
+		playerCount:Set(string.format("%d / %d players", #Players:GetPlayers(), Players.MaxPlayers))
+	end
+	refreshPlayers()
+	Track(Players.PlayerAdded:Connect(refreshPlayers))
+	Track(Players.PlayerRemoving:Connect(refreshPlayers))
+
+	-- support
+	if opts.Support ~= false then
+		local support = tab:Section(opts.SupportTitle or "support", "full")
+		support:Paragraph({
+			Title = opts.SupportHeading or "need help?",
+			Content = opts.SupportText or "join the community to get help or report an issue.",
+			Icon = "message-circle",
+		})
+		if opts.Discord then
+			support:Button({
+				Text = opts.DiscordText or "copy discord invite",
+				Callback = function()
+					if typeof(setclipboard) == "function" then
+						setclipboard(opts.Discord)
+						Library:Success(opts.Title or "overview", "invite copied.", 3)
+					else
+						Library:Warn(opts.Title or "overview", opts.Discord, 6)
+					end
+				end,
+			})
+		end
+	end
+
+	self.OverviewTab = tab
+	return tab
+end
+
 function Window:NextTabOrder()
 	self.TabOrder = (self.TabOrder or 0) + 1
 	return self.TabOrder
@@ -3092,6 +3197,10 @@ function Library:Window(opts)
 			if resizeEnd then resizeEnd:Disconnect() resizeEnd = nil end
 		end)
 	end))
+
+	if opts.Overview or opts.Overviews then
+		window:Overview(type(opts.Overview) == "table" and opts.Overview or nil)
+	end
 
 	if opts.MobileButton == true or (opts.MobileButton ~= false and UserInputService.TouchEnabled) then
 		Library:CreateMobileButton(opts.MobileButtonOptions)
