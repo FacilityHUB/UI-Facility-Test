@@ -146,7 +146,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.03-nolocale"
+Library.Version = "2026.09.04-tabs"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2277,7 +2277,10 @@ function Window:ToggleFloating(panel, anchor, matchWidth)
 	Tween(panel.Frame, { Position = target }, EASE_FAST)
 end
 
-function Window:Tab(name)
+function Window:Tab(name, icon)
+	local opts = type(name) == "table" and name or { Title = name, Icon = icon }
+	local title = opts.Title or opts.Text or "tab"
+
 	local page = New("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -2298,38 +2301,80 @@ function Window:Tab(name)
 		Window = self,
 		Page = page,
 		Columns = {},
-		Name = name,
+		Name = title,
 		Order = 0,
 	}, Tab)
 
+	local side = self.TabStyle == "side"
+
 	local button = New("TextButton", {
-		Size = UDim2.new(0, 0, 1, 0),
-		AutomaticSize = Enum.AutomaticSize.X,
+		Size = side and UDim2.new(1, 0, 0, 30) or UDim2.new(0, 0, 1, 0),
+		AutomaticSize = (not side) and Enum.AutomaticSize.X or Enum.AutomaticSize.None,
+		BackgroundColor3 = Theme.Field,
 		BackgroundTransparency = 1,
 		AutoButtonColor = false,
-		Text = name,
-		TextColor3 = Theme.TextDim,
-		TextSize = Theme.TextSize + 1,
-		Font = Theme.Font,
+		Text = "",
 		LayoutOrder = #self.Tabs + 1,
 		Parent = self.TabBar,
 	})
+	if side then Corner(button, 5) end
+
+	local row = New("Frame", {
+		Size = side and UDim2.new(1, -20, 1, 0) or UDim2.new(0, 0, 1, 0),
+		Position = side and UDim2.fromOffset(10, 0) or UDim2.fromOffset(0, 0),
+		AutomaticSize = (not side) and Enum.AutomaticSize.X or Enum.AutomaticSize.None,
+		BackgroundTransparency = 1,
+		Parent = button,
+	})
+	local rowList = List(row, 7, Enum.FillDirection.Horizontal)
+	rowList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+	local icon = AttachIcon(row, opts.Icon, Theme.TextDim, 15)
+	if icon then
+		icon.Position = UDim2.fromOffset(0, 0)
+		icon.LayoutOrder = 1
+	end
+
+	local label = Label(row, title, Theme.TextDim, Theme.TextSize + 1)
+	label.Size = side and UDim2.new(1, icon and -22 or 0, 1, 0) or UDim2.new(0, 0, 1, 0)
+	label.AutomaticSize = (not side) and Enum.AutomaticSize.X or Enum.AutomaticSize.None
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.LayoutOrder = 2
 
 	tab.Button = button
+	tab.Label = label
+	tab.Icon = icon
+
+	function tab:SetActive(active, animate)
+		local info = animate and EASE_FAST or TweenInfo.new(0)
+		local color = active and Theme.Accent or Theme.TextDim
+		Tween(label, { TextColor3 = color }, info)
+		if icon then Tween(icon, { ImageColor3 = color }, info) end
+		if side then
+			Tween(button, { BackgroundTransparency = active and 0 or 1 }, info)
+		end
+	end
+
 	table.insert(self.Tabs, tab)
 
 	Library:OnRepaint(function()
-		button.TextColor3 = (self.ActiveTab == tab) and Theme.Accent or Theme.TextDim
+		tab:SetActive(self.ActiveTab == tab, false)
 	end)
 
 	Track(button.Activated:Connect(function()
 		self:SetTab(tab)
 	end))
 	Track(button.MouseEnter:Connect(function()
-		if self.ActiveTab ~= tab then Tween(button, { TextColor3 = Theme.Text }, EASE_FAST) end
+		if self.ActiveTab == tab then return end
+		Tween(label, { TextColor3 = Theme.Text }, EASE_FAST)
+		if icon then Tween(icon, { ImageColor3 = Theme.Text }, EASE_FAST) end
+		if side then Tween(button, { BackgroundTransparency = 0.55 }, EASE_FAST) end
 	end))
 	Track(button.MouseLeave:Connect(function()
-		if self.ActiveTab ~= tab then Tween(button, { TextColor3 = Theme.TextDim }, EASE_FAST) end
+		if self.ActiveTab == tab then return end
+		Tween(label, { TextColor3 = Theme.TextDim }, EASE_FAST)
+		if icon then Tween(icon, { ImageColor3 = Theme.TextDim }, EASE_FAST) end
+		if side then Tween(button, { BackgroundTransparency = 1 }, EASE_FAST) end
 	end))
 	Track(page:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
 		self:CloseFloating()
@@ -2349,13 +2394,13 @@ function Window:SetTab(tab)
 	self:CloseFloating()
 	if self.ActiveTab then
 		self.ActiveTab.Page.Visible = false
-		Tween(self.ActiveTab.Button, { TextColor3 = Theme.TextDim }, EASE_FAST)
+		self.ActiveTab:SetActive(false, true)
 	end
 	self.ActiveTab = tab
 	tab.Page.Visible = true
 	tab.Page.Position = UDim2.fromOffset(0, 6)
 	Tween(tab.Page, { Position = UDim2.fromOffset(0, 0) })
-	Tween(tab.Button, { TextColor3 = Theme.Accent }, EASE_FAST)
+	tab:SetActive(true, true)
 end
 
 function Window:Action(text, callback)
@@ -2744,29 +2789,57 @@ function Library:Window(opts)
 		Parent = topBar,
 	})
 
-	local tabBar = New("ScrollingFrame", {
-		Size = UDim2.new(1, -180, 1, 0),
-		Position = UDim2.fromOffset(0, 0),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ClipsDescendants = true,
-		CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.X,
-		ScrollingDirection = Enum.ScrollingDirection.X,
-		ScrollBarThickness = 0,
-		ElasticBehavior = Enum.ElasticBehavior.Never,
-		Parent = topBar,
-	})
-	local tabList = List(tabBar, 18, Enum.FillDirection.Horizontal)
-	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+	local tabStyle = (opts.TabStyle == "side" or opts.CategoryMod == 2) and "side" or "top"
+	local tabWidth = opts.TabWidth or 140
+	local footerHeight = opts.Footer == false and 0 or 40
 
-	local function layoutTabs()
-		local s = math.max(scale.Scale, 0.05)
-		local width = title.AbsoluteSize.X / s
-		titleDivider.Position = UDim2.new(0, 16 + width + 12, 0.5, 0)
-		local x = 16 + width + 25
-		tabBar.Position = UDim2.fromOffset(x, 0)
-		tabBar.Size = UDim2.new(1, -(x + 14), 1, 0)
+	local tabBar
+	local layoutTabs
+
+	if tabStyle == "side" then
+		titleDivider.Visible = false
+
+		tabBar = New("ScrollingFrame", {
+			Size = UDim2.new(0, tabWidth, 1, -(47 + footerHeight + 22)),
+			Position = UDim2.fromOffset(14, 58),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ScrollBarThickness = 0,
+			ElasticBehavior = Enum.ElasticBehavior.Never,
+			Parent = main,
+		})
+		List(tabBar, 4)
+
+		layoutTabs = function() end
+	else
+		tabBar = New("ScrollingFrame", {
+			Size = UDim2.new(1, -180, 1, 0),
+			Position = UDim2.fromOffset(0, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.X,
+			ScrollingDirection = Enum.ScrollingDirection.X,
+			ScrollBarThickness = 0,
+			ElasticBehavior = Enum.ElasticBehavior.Never,
+			Parent = topBar,
+		})
+		local tabList = List(tabBar, 18, Enum.FillDirection.Horizontal)
+		tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+		layoutTabs = function()
+			local s = math.max(scale.Scale, 0.05)
+			local width = title.AbsoluteSize.X / s
+			titleDivider.Position = UDim2.new(0, 16 + width + 12, 0.5, 0)
+			local x = 16 + width + 25
+			tabBar.Position = UDim2.fromOffset(x, 0)
+			tabBar.Size = UDim2.new(1, -(x + 14), 1, 0)
+		end
 	end
 	Track(title:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
 	Track(main:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
@@ -2780,10 +2853,10 @@ function Library:Window(opts)
 		Parent = main,
 	})
 
-	local footerHeight = opts.Footer == false and 0 or 40
+	local shellLeft = tabStyle == "side" and (14 + tabWidth + 10) or 14
 	local shell = New("Frame", {
-		Size = UDim2.new(1, -28, 1, -(47 + footerHeight + 22)),
-		Position = UDim2.fromOffset(14, 58),
+		Size = UDim2.new(1, -(14 + shellLeft), 1, -(47 + footerHeight + 22)),
+		Position = UDim2.fromOffset(shellLeft, 58),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = main,
@@ -2856,6 +2929,8 @@ function Library:Window(opts)
 		Overlay = overlay,
 		Blocker = blocker,
 		Scale = scale,
+		TabStyle = tabStyle,
+		TabWidth = tabWidth,
 		BaseScale = 1,
 		FloatStack = {},
 		UserScale = 1,
