@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -146,7 +148,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.04-tabs"
+Library.Version = "2026.09.04-tabdiv"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2314,7 +2316,7 @@ function Window:Tab(name, icon)
 		BackgroundTransparency = 1,
 		AutoButtonColor = false,
 		Text = "",
-		LayoutOrder = #self.Tabs + 1,
+		LayoutOrder = self:NextTabOrder(),
 		Parent = self.TabBar,
 	})
 	if side then Corner(button, 5) end
@@ -2382,6 +2384,45 @@ function Window:Tab(name, icon)
 
 	if not self.ActiveTab then self:SetTab(tab) end
 	return tab
+end
+
+function Window:NextTabOrder()
+	self.TabOrder = (self.TabOrder or 0) + 1
+	return self.TabOrder
+end
+
+function Window:TabDivider(opts)
+	if self.TabStyle ~= "side" then return nil end
+	opts = opts or {}
+
+	local holder = New("Frame", {
+		Size = UDim2.new(1, 0, 0, opts.Height or 11),
+		BackgroundTransparency = 1,
+		LayoutOrder = self:NextTabOrder(),
+		Parent = self.TabBar,
+	})
+
+	local inset = opts.Inset or 12
+	local line = New("Frame", {
+		Size = UDim2.new(1, -inset * 2, 0, 1),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, inset, 0.5, 0),
+		BackgroundColor3 = Theme.BorderSoft,
+		BorderSizePixel = 0,
+		Parent = holder,
+	})
+
+	if opts.Text then
+		holder.Size = UDim2.new(1, 0, 0, opts.Height or 24)
+		line:Destroy()
+		local label = Label(holder, opts.Text, Theme.TextDim, Theme.TextSize - 2)
+		label.Position = UDim2.fromOffset(inset, 0)
+		label.Size = UDim2.new(1, -inset * 2, 1, 0)
+		label.TextYAlignment = Enum.TextYAlignment.Bottom
+		return { Instance = holder, Label = label }
+	end
+
+	return { Instance = holder, Line = line }
 end
 
 function Window:SetTab(tab)
