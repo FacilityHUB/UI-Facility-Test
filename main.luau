@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -146,7 +148,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.04-overview"
+Library.Version = "2026.09.04-overview-2"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2388,6 +2390,13 @@ function Window:Overview(opts)
 	opts = opts or {}
 
 	local MarketplaceService = game:GetService("MarketplaceService")
+
+	local player = Players.LocalPlayer
+	if not player then
+		Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+		player = Players.LocalPlayer
+	end
+
 	local tab = self:Tab({ Title = opts.Title or "overview", Icon = opts.Icon or "layout-dashboard" })
 
 	-- account card
@@ -2408,18 +2417,20 @@ function Window:Overview(opts)
 	Corner(avatar, 8)
 	Stroke(avatar, Theme.Border)
 
-	local nameLabel = Label(card, LocalPlayer.DisplayName, Theme.TextBright, Theme.TextSize + 2, Theme.FontMedium)
+	local nameLabel = Label(card, player and player.DisplayName or "player", Theme.TextBright, Theme.TextSize + 2, Theme.FontMedium)
 	nameLabel.Position = UDim2.fromOffset(78, 6)
 	nameLabel.Size = UDim2.new(1, -160, 0, 20)
 
-	local userLabel = Label(card, "@" .. LocalPlayer.Name, Theme.Text)
+	local userLabel = Label(card, "@" .. (player and player.Name or "unknown"), Theme.Text)
 	userLabel.Position = UDim2.fromOffset(78, 27)
 	userLabel.Size = UDim2.new(1, -160, 0, 18)
 
 	local metaLabel = Label(card, "", Theme.TextDim, Theme.TextSize - 1)
 	metaLabel.Position = UDim2.fromOffset(78, 45)
 	metaLabel.Size = UDim2.new(1, -160, 0, 16)
-	metaLabel.Text = string.format("%d days  -  ID %d", LocalPlayer.AccountAge, LocalPlayer.UserId)
+	metaLabel.Text = player
+		and string.format("%d days  -  ID %d", player.AccountAge, player.UserId)
+		or "-"
 
 	local status = Label(card, opts.Status or "Ready", Theme.TextCode)
 	status.AnchorPoint = Vector2.new(1, 0)
@@ -2428,9 +2439,10 @@ function Window:Overview(opts)
 	status.TextXAlignment = Enum.TextXAlignment.Right
 
 	task.spawn(function()
+		if not player then return end
 		local ok, image = pcall(function()
 			return Players:GetUserThumbnailAsync(
-				LocalPlayer.UserId,
+				player.UserId,
 				Enum.ThumbnailType.HeadShot,
 				Enum.ThumbnailSize.Size150x150)
 		end)
