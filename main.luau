@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
 
 local function GetPlayerGui()
 	local player = Players.LocalPlayer
@@ -146,7 +148,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.04-tabdiv"
+Library.Version = "2026.09.05-cursor"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -3091,6 +3093,10 @@ function Library:Window(opts)
 		end)
 	end))
 
+	if opts.Cursor then
+		Library:SetCursor(true, type(opts.Cursor) == "table" and opts.Cursor or nil)
+	end
+
 	if opts.MobileButton == true or (opts.MobileButton ~= false and UserInputService.TouchEnabled) then
 		Library:CreateMobileButton(opts.MobileButtonOptions)
 	end
@@ -3654,12 +3660,86 @@ function Library:SetHotkeysVisible(state)
 	return self.HotkeysEnabled
 end
 
+Library.CursorEnabled = false
+
+function Library:CreateCursor(opts)
+	if self.CursorGui then return self.CursorGui end
+	opts = opts or {}
+
+	local length = opts.Length or 9
+	local thickness = opts.Thickness or 2
+	local gap = opts.Gap or 4
+
+	local gui = New("ScreenGui", {
+		Name = "FacilityCursor",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		AutoLocalize = false,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		DisplayOrder = 1002,
+		Enabled = false,
+	})
+	ParentGui(gui)
+
+	local holder = New("Frame", {
+		Size = UDim2.fromOffset(1, 1),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+
+	local function bar(anchor, position, size)
+		local piece = New("Frame", {
+			Size = size,
+			AnchorPoint = anchor,
+			Position = position,
+			BackgroundColor3 = opts.Color or Theme.Accent,
+			BorderSizePixel = 0,
+			Parent = holder,
+		})
+		Corner(piece, 1)
+		return piece
+	end
+
+	bar(Vector2.new(1, 0.5), UDim2.new(0.5, -gap, 0.5, 0), UDim2.fromOffset(length, thickness))
+	bar(Vector2.new(0, 0.5), UDim2.new(0.5, gap, 0.5, 0), UDim2.fromOffset(length, thickness))
+	bar(Vector2.new(0.5, 1), UDim2.new(0.5, 0, 0.5, -gap), UDim2.fromOffset(thickness, length))
+	bar(Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0.5, gap), UDim2.fromOffset(thickness, length))
+
+	if opts.Dot ~= false then
+		bar(Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(thickness, thickness))
+	end
+
+	Track(RunService.RenderStepped:Connect(function()
+		if not gui.Enabled then return end
+		local position = UserInputService:GetMouseLocation() + GuiService:GetGuiInset()
+		holder.Position = UDim2.fromOffset(position.X, position.Y)
+	end))
+
+	self.CursorGui = gui
+	self.CursorHolder = holder
+	return gui
+end
+
+function Library:RefreshCursor()
+	if not self.CursorGui then return end
+	self.CursorGui.Enabled = self.CursorEnabled and self.Open
+end
+
+function Library:SetCursor(state, opts)
+	self.CursorEnabled = state and true or false
+	if self.CursorEnabled then self:CreateCursor(opts) end
+	self:RefreshCursor()
+	return self.CursorEnabled
+end
+
 function Library:ToggleUI(state)
 	if state == nil then state = not self.Open end
 	self.Open = state
 	for _, window in ipairs(self.Windows) do
 		window:SetVisible(state)
 	end
+	self:RefreshCursor()
 	return self.Open
 end
 
@@ -3759,6 +3839,7 @@ function Library:Destroy()
 	table.clear(self.Windows)
 	if self.NotifyGui then self.NotifyGui:Destroy() self.NotifyGui = nil end
 	if self.MobileGui then self.MobileGui:Destroy() self.MobileGui = nil self.MobileButton = nil end
+	if self.CursorGui then self.CursorGui:Destroy() self.CursorGui = nil self.CursorHolder = nil end
 	if self.HotkeyGui then self.HotkeyGui:Destroy() self.HotkeyGui = nil self.HotkeyPanel = nil end
 	for index = #self.Panels, 1, -1 do
 		pcall(function() self.Panels[index].Gui:Destroy() end)
