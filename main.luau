@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -148,7 +150,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.05-cursor"
+Library.Version = "2026.09.05-cursor-2"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -3712,7 +3714,10 @@ function Library:CreateCursor(opts)
 
 	Track(RunService.RenderStepped:Connect(function()
 		if not gui.Enabled then return end
-		local position = UserInputService:GetMouseLocation() + GuiService:GetGuiInset()
+		local position = UserInputService:GetMouseLocation()
+		if not gui.IgnoreGuiInset then
+			position = position - GuiService:GetGuiInset()
+		end
 		holder.Position = UDim2.fromOffset(position.X, position.Y)
 	end))
 
