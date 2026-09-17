@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -150,7 +148,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.05-cursor-2"
+Library.Version = "2026.09.05-cursor-3"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2192,7 +2190,8 @@ end
 
 function Tab:Column(index)
 	self:Block()
-	return self.Columns[index or 1]
+	local slot = math.clamp(math.floor(tonumber(index) or 1), 1, #self.Columns)
+	return self.Columns[slot]
 end
 
 function Tab:Full(title)
@@ -2203,10 +2202,10 @@ function Tab:Full(title)
 end
 
 function Tab:Section(title, columnIndex)
-	if columnIndex == "full" or columnIndex == 0 then
+	if columnIndex == "full" or columnIndex == "0" or tonumber(columnIndex) == 0 then
 		return self:Full(title)
 	end
-	return self:Column(columnIndex or 1):Section(title)
+	return self:Column(columnIndex):Section(title)
 end
 
 local Window = {}
