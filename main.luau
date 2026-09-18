@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -148,7 +150,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.05-cursor-3"
+Library.Version = "2026.09.05-textbox"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -780,6 +782,7 @@ function Elements:Input(opts)
 		Size = UDim2.new(1, 0, 0, 26),
 		BackgroundColor3 = Theme.Field,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		LayoutOrder = 2,
 		Parent = block,
 	})
@@ -1200,6 +1203,7 @@ function Elements:Dropdown(opts)
 		Size = UDim2.new(1, 0, 0, 24),
 		BackgroundColor3 = Theme.Field,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		LayoutOrder = 1,
 		Visible = false,
 		ZIndex = panel.Frame.ZIndex,
@@ -1676,6 +1680,7 @@ function BuildColorPicker(owner, swatch, opts)
 		Size = UDim2.new(1, 0, 0, 24),
 		BackgroundColor3 = Theme.Field,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		LayoutOrder = 3,
 		ZIndex = z,
 		Parent = panel.Content,
@@ -2000,6 +2005,7 @@ function Elements:Search(opts)
 		Size = UDim2.new(1, -56, 1, 0),
 		BackgroundColor3 = Theme.Field,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		Parent = row,
 	})
 	Corner(field, 5)
