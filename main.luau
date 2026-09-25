@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2932,7 +2930,7 @@ function Library:Window(opts)
 
 			local card = New("Frame", {
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Size = UDim2.fromOffset(470, 172),
+				Size = UDim2.fromOffset(520, 178),
 				Position = UDim2.fromScale(0.5, 0.5),
 				BackgroundColor3 = Theme.Window,
 				BorderSizePixel = 0,
@@ -2964,22 +2962,22 @@ function Library:Window(opts)
 
 			-- title / subtitle (no logo)
 			local ksTitle = Label(card, title, Theme.TextBright, 14, Theme.FontMedium)
-			ksTitle.Position = UDim2.new(0.065, 0, 0.134, 0)
+			ksTitle.Position = UDim2.fromOffset(24, 22)
 			ksTitle.Size = UDim2.fromOffset(200, 16)
 
 			local ksSub = Label(card, subtitle, Theme.TextDim, 12)
-			ksSub.Position = UDim2.new(0.065, 0, 0.222, 0)
+			ksSub.Position = UDim2.fromOffset(24, 40)
 			ksSub.Size = UDim2.fromOffset(200, 13)
 
 			-- right side: Get Key + description
 			local announce = Label(card, "Get Key", Theme.TextBright, 14, Theme.FontMedium)
-			announce.Position = UDim2.new(0.545, 0, 0.139, 0)
-			announce.Size = UDim2.fromOffset(190, 13)
+			announce.Position = UDim2.fromOffset(286, 22)
+			announce.Size = UDim2.fromOffset(210, 16)
 
 			local descr = New("TextLabel", {
 				BackgroundTransparency = 1,
-				Size = UDim2.fromOffset(190, 62),
-				Position = UDim2.new(0.545, 0, 0.219, 0),
+				Size = UDim2.fromOffset(210, 60),
+				Position = UDim2.fromOffset(286, 42),
 				TextColor3 = Theme.TextDim,
 				RichText = true,
 				Text = note ~= "" and note or ('To obtain the key, simply click on <font color="rgb(232,161,168)">Get-Key</font>. This will copy the key link to your clipboard. For any help, don\'t hesitate to ask on our Discord by clicking on <font color="rgb(120,170,230)">Discord</font>.'),
@@ -2994,7 +2992,7 @@ function Library:Window(opts)
 			-- vertical divider
 			New("Frame", {
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Position = UDim2.fromOffset(262, 89),
 				Size = UDim2.new(0, 1, 1, -44),
 				BackgroundColor3 = Theme.BorderSoft,
 				BorderSizePixel = 0,
@@ -3003,8 +3001,8 @@ function Library:Window(opts)
 
 			-- input
 			local field = New("Frame", {
-				Position = UDim2.new(0.064, 0, 0.37, 0),
-				Size = UDim2.fromOffset(195, 30),
+				Position = UDim2.fromOffset(24, 68),
+				Size = UDim2.fromOffset(214, 32),
 				BackgroundColor3 = Theme.Field,
 				BorderSizePixel = 0,
 				ClipsDescendants = true,
@@ -3031,8 +3029,8 @@ function Library:Window(opts)
 
 			-- validate button
 			local validateFrame = New("Frame", {
-				Position = UDim2.new(0.134, 0, 0.695, 0),
-				Size = UDim2.fromOffset(128, 27),
+				Position = UDim2.fromOffset(24, 124),
+				Size = UDim2.fromOffset(214, 30),
 				BackgroundColor3 = Theme.Accent,
 				BorderSizePixel = 0,
 				Parent = card,
@@ -3053,15 +3051,15 @@ function Library:Window(opts)
 			})
 
 			local errorLabel = Label(card, "", Theme.Danger, 11)
-			errorLabel.Position = UDim2.new(0.064, 0, 0.56, 0)
-			errorLabel.Size = UDim2.fromOffset(195, 13)
+			errorLabel.Position = UDim2.fromOffset(24, 104)
+			errorLabel.Size = UDim2.fromOffset(214, 14)
 			errorLabel.Visible = false
 
 			-- get key button
 			if ks.GetKey then
 				local gkFrame = New("Frame", {
-					Position = UDim2.new(0.514, 0, 0.695, 0),
-					Size = UDim2.fromOffset(100, 27),
+					Position = UDim2.fromOffset(286, 124),
+					Size = UDim2.fromOffset(100, 30),
 					BackgroundColor3 = Theme.Accent,
 					BorderSizePixel = 0,
 					Parent = card,
@@ -3085,8 +3083,8 @@ function Library:Window(opts)
 			-- discord button
 			if ks.Discord then
 				local dcFrame = New("Frame", {
-					Position = UDim2.new(0.762, 0, 0.695, 0),
-					Size = UDim2.fromOffset(100, 27),
+					Position = UDim2.fromOffset(396, 124),
+					Size = UDim2.fromOffset(100, 30),
 					BackgroundColor3 = Theme.Field,
 					BorderSizePixel = 0,
 					Parent = card,
