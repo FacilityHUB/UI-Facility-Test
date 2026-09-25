@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2831,6 +2833,32 @@ function Library:Window(opts)
 	local width = opts.Width or 620
 	local height = opts.Height or 560
 
+	-- load the saved theme before anything is drawn, so the key system,
+	-- the main window and every later element share the same palette
+	pcall(function()
+		local folder = opts.ThemeFolder or opts.Folder or "Facility"
+		local path = folder .. "/settings/theme.json"
+		if not (isfile and isfile(path)) then return end
+
+		local raw = readfile(path)
+		if not raw then return end
+
+		local ok, data = pcall(function()
+			return game:GetService("HttpService"):JSONDecode(raw)
+		end)
+		if not ok or type(data) ~= "table" or type(data.Colors) ~= "table" then return end
+
+		for key, hex in pairs(data.Colors) do
+			if Theme[key] ~= nil then
+				local color, alpha = FromHex(hex)
+				if color then
+					Theme[key] = color
+					if alpha then ThemeAlpha[key] = alpha end
+				end
+			end
+		end
+	end)
+
 	-- ---- Discord RPC ----
 	if opts.Discord and opts.Discord.Enabled ~= false and opts.Discord.Invite then
 		local inv = opts.Discord.Invite
@@ -3540,76 +3568,6 @@ function Library:Window(opts)
 		end)
 	end))
 
-	-- ---- Loading card ----
-	if opts.Loading ~= false then
-		local loadOpts = type(opts.Loading) == "table" and opts.Loading or {}
-		local gui = New("ScreenGui", {
-			Name = RandomName(),
-			ResetOnSpawn = false,
-			IgnoreGuiInset = true,
-			AutoLocalize = false,
-			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-			DisplayOrder = MAX_DISPLAY_ORDER - 1,
-		})
-		ParentGui(gui)
-
-		local scrim = New("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-			BackgroundTransparency = 0.5,
-			BorderSizePixel = 0,
-			Parent = gui,
-		})
-
-		local card = New("Frame", {
-			Size = UDim2.fromOffset(340, 90),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			BackgroundColor3 = Theme.Window,
-			BorderSizePixel = 0,
-			Parent = gui,
-		})
-		Corner(card, 12)
-		Stroke(card, Theme.WindowBorder)
-
-		local tName = Label(card, loadOpts.Title or opts.Title or "facility", Theme.TextBright, 15, Theme.FontMedium)
-		tName.Position = UDim2.fromOffset(20, 18)
-		tName.Size = UDim2.new(0, 0, 0, 18)
-		tName.AutomaticSize = Enum.AutomaticSize.X
-
-		local tSuffix = Label(card, loadOpts.Suffix or opts.Suffix or ".app", Theme.Accent, 15, Theme.FontMedium)
-		tSuffix.Position = UDim2.new(0, 22 + tName.AbsoluteSize.X, 0, 18)
-		tSuffix.Size = UDim2.new(0, 0, 0, 18)
-		tSuffix.AutomaticSize = Enum.AutomaticSize.X
-
-		local subLabel = Label(card, loadOpts.Subtitle or "loading...", Theme.TextDim, 11)
-		subLabel.Position = UDim2.fromOffset(20, 46)
-		subLabel.Size = UDim2.new(0.6, 0, 0, 14)
-
-		local buildLabel = Label(card, "Build " .. (Library.Version or "?"), Theme.TextDim, 10)
-		buildLabel.AnchorPoint = Vector2.new(1, 1)
-		buildLabel.Position = UDim2.new(1, -16, 1, -16)
-		buildLabel.Size = UDim2.new(0, 0, 0, 12)
-		buildLabel.AutomaticSize = Enum.AutomaticSize.X
-		buildLabel.TextXAlignment = Enum.TextXAlignment.Right
-
-		local loading = { Gui = gui }
-
-		function loading:SetProgress(v) end
-
-		function loading:SetText(text)
-			subLabel.Text = text
-		end
-
-		function loading:Dismiss()
-			Tween(card, { BackgroundTransparency = 1 }, EASE_FAST)
-			Tween(scrim, { BackgroundTransparency = 1 }, EASE_FAST)
-			task.wait(0.3)
-			gui:Destroy()
-		end
-
-		window.Loading = loading
-	end
 	if opts.Cursor then
 		Library:SetCursor(true, type(opts.Cursor) == "table" and opts.Cursor or nil)
 	end
