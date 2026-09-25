@@ -1,5 +1,4 @@
--- Facility addon | InterfaceManager
--- Reglages de l'interface elle-meme : touche du menu, echelle, dechargement.
+
 
 return function(Library)
 	local InterfaceManager = {}
@@ -56,6 +55,8 @@ return function(Library)
 
 		local currentLayout = (window and window.TabStyle) or self.Settings.Layout or "top"
 
+		section:Divider()
+		section:Label("layout")
 		section:ButtonRow({
 			{
 				Text = "layout: top",
