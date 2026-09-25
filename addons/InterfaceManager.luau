@@ -1,6 +1,3 @@
--- Facility addon | InterfaceManager
--- Reglages de l'interface elle-meme : touche du menu, echelle, dechargement.
-
 return function(Library)
 	local InterfaceManager = {}
 	InterfaceManager.Library = Library
