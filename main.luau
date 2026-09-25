@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -3057,8 +3055,8 @@ function Library:Window(opts)
 
 			-- validate button
 			local validateFrame = New("Frame", {
-				Position = UDim2.fromOffset(24, 124),
-				Size = UDim2.fromOffset(214, 30),
+				Position = UDim2.fromOffset(61, 124),
+				Size = UDim2.fromOffset(140, 30),
 				BackgroundColor3 = Theme.Accent,
 				BorderSizePixel = 0,
 				Parent = card,
@@ -4228,6 +4226,323 @@ function Library:SetCursor(state, opts)
 	return self.CursorEnabled
 end
 
+function Library:ServerBrowser(opts)
+	if self.ServerBrowser then return self.ServerBrowser end
+	opts = opts or {}
+
+	local HttpService = game:GetService("HttpService")
+	local TeleportService = game:GetService("TeleportService")
+	local player = Players.LocalPlayer
+
+	local gui = New("ScreenGui", {
+		Name = RandomName(),
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		AutoLocalize = false,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		DisplayOrder = MAX_DISPLAY_ORDER - 2,
+		Enabled = false,
+	})
+	ParentGui(gui)
+
+	local main = New("Frame", {
+		Size = UDim2.fromOffset(opts.Width or 340, opts.Height or 420),
+		Position = opts.Position or UDim2.new(0.5, -170, 0.5, -210),
+		BackgroundColor3 = Theme.Window,
+		BorderSizePixel = 0,
+		Active = true,
+		Parent = gui,
+	})
+	Corner(main, 10)
+	Stroke(main, Theme.WindowBorder)
+
+	local shadowHolder = New("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.new(1, 35, 1.096, 35),
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 1,
+		Parent = main,
+	})
+	New("ImageLabel", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundTransparency = 1,
+		ZIndex = 0,
+		Image = "rbxassetid://5587865193",
+		ImageColor3 = Color3.fromRGB(20, 20, 20),
+		Size = UDim2.new(1.6, 0, 1.3, 0),
+		Position = UDim2.fromScale(0.5, 0.5),
+		ImageTransparency = 0.5,
+		Parent = shadowHolder,
+	})
+
+	-- header
+	local topBar = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 40),
+		BackgroundColor3 = Theme.TopBar,
+		BorderSizePixel = 0,
+		Parent = main,
+	})
+	Corner(topBar, 10)
+	New("Frame", {
+		Size = UDim2.new(1, 0, 0, 12),
+		Position = UDim2.fromOffset(0, 28),
+		BackgroundColor3 = Theme.TopBar,
+		BorderSizePixel = 0,
+		Parent = topBar,
+	})
+	New("Frame", {
+		Size = UDim2.new(1, 0, 0, 1),
+		Position = UDim2.fromOffset(0, 39),
+		BackgroundColor3 = Theme.BorderSoft,
+		BorderSizePixel = 0,
+		Parent = topBar,
+	})
+
+	local heading = Label(topBar, opts.Title or "servers", Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
+	heading.Position = UDim2.fromOffset(14, 0)
+	heading.Size = UDim2.new(1, -90, 1, 0)
+
+	local statusLabel = Label(topBar, "", Theme.TextDim, 11)
+	statusLabel.AnchorPoint = Vector2.new(1, 0.5)
+	statusLabel.Position = UDim2.new(1, -66, 0.5, 0)
+	statusLabel.Size = UDim2.fromOffset(120, 14)
+	statusLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+	local refreshBtn = New("TextButton", {
+		Size = UDim2.fromOffset(22, 22),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -38, 0.5, 0),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Text = "",
+		Parent = topBar,
+	})
+	local refreshIcon = AttachIcon(refreshBtn, "refresh-cw", Theme.TextDim, 15)
+	if refreshIcon then
+		refreshIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+		refreshIcon.Position = UDim2.fromScale(0.5, 0.5)
+	end
+
+	local closeBtn = New("TextButton", {
+		Size = UDim2.fromOffset(22, 22),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Text = "",
+		Parent = topBar,
+	})
+	local closeBars = {}
+	for i = 1, 2 do
+		local bar = New("Frame", {
+			Size = UDim2.fromOffset(13, 2),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Rotation = i == 1 and 45 or -45,
+			BackgroundColor3 = Theme.TextDim,
+			BorderSizePixel = 0,
+			Parent = closeBtn,
+		})
+		Corner(bar, 1)
+		closeBars[i] = bar
+	end
+
+	-- list
+	local list = New("ScrollingFrame", {
+		Size = UDim2.new(1, -20, 1, -54),
+		Position = UDim2.fromOffset(10, 48),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = Theme.AccentDim,
+		ScrollBarImageTransparency = 0.3,
+		VerticalScrollBarInset = Enum.ScrollBarInset.None,
+		Parent = main,
+	})
+	List(list, 6)
+	Pad(list, 2, 8, 2, 2)
+
+	local api = {
+		Gui = gui,
+		Frame = main,
+		Open = false,
+	}
+
+	local loading = false
+
+	local function clearRows()
+		for _, child in ipairs(list:GetChildren()) do
+			if child:IsA("Frame") then child:Destroy() end
+		end
+	end
+
+	local function addRow(server, index)
+		local row = New("Frame", {
+			Size = UDim2.new(1, 0, 0, 44),
+			BackgroundColor3 = Theme.Section,
+			BorderSizePixel = 0,
+			LayoutOrder = index,
+			Parent = list,
+		})
+		Corner(row, 6)
+		Stroke(row, Theme.SectionBorder)
+
+		local players = Label(row, string.format("%d / %d players", server.playing or 0, server.maxPlayers or 0), Theme.TextBright)
+		players.Position = UDim2.fromOffset(12, 6)
+		players.Size = UDim2.new(1, -90, 0, 16)
+
+		local ping = server.ping or 0
+		local pingColor = Theme.TextCode
+		if ping > 150 then
+			pingColor = Theme.Danger
+		elseif ping > 80 then
+			pingColor = Theme.TextMarked
+		end
+
+		local meta = Label(row, string.format("%d ms  -  %d fps", math.floor(ping), math.floor(server.fps or 0)), pingColor, 11)
+		meta.Position = UDim2.fromOffset(12, 23)
+		meta.Size = UDim2.new(1, -90, 0, 14)
+
+		local joinFrame = New("Frame", {
+			Size = UDim2.fromOffset(62, 26),
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -10, 0.5, 0),
+			BackgroundColor3 = Theme.Accent,
+			BorderSizePixel = 0,
+			Parent = row,
+		})
+		Corner(joinFrame, 6)
+
+		local joinBtn = New("TextButton", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Text = "join",
+			TextColor3 = Color3.fromRGB(40, 32, 34),
+			TextSize = Theme.TextSize,
+			Font = Theme.FontMedium,
+			Parent = joinFrame,
+		})
+
+		Track(joinBtn.Activated:Connect(function()
+			Library:Notify("servers", "teleporting...", 3)
+			pcall(function()
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+			end)
+		end))
+	end
+
+	local function refresh()
+		if loading then return end
+		loading = true
+		statusLabel.Text = "loading..."
+		clearRows()
+
+		task.spawn(function()
+			local ok, result = pcall(function()
+				local url = "https://games.roblox.com/v1/games/" .. game.PlaceId
+					.. "/servers/Public?sortOrder=Asc&limit=100"
+				return HttpService:JSONDecode(game:HttpGet(url))
+			end)
+
+			if not ok or type(result) ~= "table" or type(result.data) ~= "table" then
+				statusLabel.Text = "request failed"
+				loading = false
+				return
+			end
+
+			local servers = {}
+			for _, srv in ipairs(result.data) do
+				if srv.id ~= game.JobId then
+					table.insert(servers, srv)
+				end
+			end
+
+			table.sort(servers, function(a, b)
+				return (a.ping or 999) < (b.ping or 999)
+			end)
+
+			local shown = 0
+			for _, srv in ipairs(servers) do
+				shown = shown + 1
+				addRow(srv, shown)
+				if shown >= (opts.MaxRows or 40) then break end
+			end
+
+			statusLabel.Text = shown .. " servers"
+			loading = false
+		end)
+	end
+
+	Track(refreshBtn.Activated:Connect(refresh))
+	Track(refreshBtn.MouseEnter:Connect(function()
+		if refreshIcon then Tween(refreshIcon, { ImageColor3 = Theme.Accent }, EASE_FAST) end
+	end))
+	Track(refreshBtn.MouseLeave:Connect(function()
+		if refreshIcon then Tween(refreshIcon, { ImageColor3 = Theme.TextDim }, EASE_FAST) end
+	end))
+
+	Track(closeBtn.Activated:Connect(function() api:SetVisible(false) end))
+	Track(closeBtn.MouseEnter:Connect(function()
+		for _, bar in ipairs(closeBars) do Tween(bar, { BackgroundColor3 = Theme.Danger }, EASE_FAST) end
+	end))
+	Track(closeBtn.MouseLeave:Connect(function()
+		for _, bar in ipairs(closeBars) do Tween(bar, { BackgroundColor3 = Theme.TextDim }, EASE_FAST) end
+	end))
+
+	-- drag
+	do
+		local dragging, dragStart, startPos = false, nil, nil
+		local targetPos = main.Position
+		Track(topBar.InputBegan:Connect(function(input)
+			if input.UserInputType ~= Enum.UserInputType.MouseButton1
+				and input.UserInputType ~= Enum.UserInputType.Touch then return end
+			dragging = true
+			dragStart = input.Position
+			startPos = main.Position
+			targetPos = main.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
+		end))
+		Track(UserInputService.InputChanged:Connect(function(input)
+			if not dragging then return end
+			if input.UserInputType ~= Enum.UserInputType.MouseMovement
+				and input.UserInputType ~= Enum.UserInputType.Touch then return end
+			local delta = input.Position - dragStart
+			targetPos = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end))
+		Track(RunService.RenderStepped:Connect(function()
+			if dragging and targetPos then
+				main.Position = main.Position:Lerp(targetPos, 0.2)
+			end
+		end))
+	end
+
+	function api:SetVisible(state)
+		self.Open = state and true or false
+		gui.Enabled = self.Open
+		if self.Open and #list:GetChildren() <= 2 then
+			refresh()
+		end
+	end
+
+	function api:Toggle()
+		self:SetVisible(not self.Open)
+	end
+
+	function api:Refresh()
+		refresh()
+	end
+
+	self.ServerBrowser = api
+	return api
+end
+
 function Library:ToggleUI(state)
 	if state == nil then state = not self.Open end
 	self.Open = state
@@ -4339,6 +4654,7 @@ function Library:Destroy()
 		self.CursorBind = nil
 	end
 	if self.CursorGui then self.CursorGui:Destroy() self.CursorGui = nil self.CursorHolder = nil end
+	if self.ServerBrowser then pcall(function() self.ServerBrowser.Gui:Destroy() end) self.ServerBrowser = nil end
 	if self.HotkeyGui then self.HotkeyGui:Destroy() self.HotkeyGui = nil self.HotkeyPanel = nil end
 	for index = #self.Panels, 1, -1 do
 		pcall(function() self.Panels[index].Gui:Destroy() end)
