@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -4227,7 +4229,7 @@ function Library:SetCursor(state, opts)
 end
 
 function Library:ServerBrowser(opts)
-	if self.ServerBrowser then return self.ServerBrowser end
+	if self.ServerBrowserApi then return self.ServerBrowserApi end
 	opts = opts or {}
 
 	local HttpService = game:GetService("HttpService")
@@ -4539,7 +4541,7 @@ function Library:ServerBrowser(opts)
 		refresh()
 	end
 
-	self.ServerBrowser = api
+	self.ServerBrowserApi = api
 	return api
 end
 
@@ -4654,7 +4656,7 @@ function Library:Destroy()
 		self.CursorBind = nil
 	end
 	if self.CursorGui then self.CursorGui:Destroy() self.CursorGui = nil self.CursorHolder = nil end
-	if self.ServerBrowser then pcall(function() self.ServerBrowser.Gui:Destroy() end) self.ServerBrowser = nil end
+	if self.ServerBrowserApi then pcall(function() self.ServerBrowserApi.Gui:Destroy() end) self.ServerBrowserApi = nil end
 	if self.HotkeyGui then self.HotkeyGui:Destroy() self.HotkeyGui = nil self.HotkeyPanel = nil end
 	for index = #self.Panels, 1, -1 do
 		pcall(function() self.Panels[index].Gui:Destroy() end)
