@@ -1,3 +1,4 @@
+--1
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -161,7 +162,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.07-switchlayout"
+Library.Version = "2026.09.07-keysystem"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2490,72 +2491,6 @@ function Window:TabDivider(opts)
 	return { Instance = holder, Line = line }
 end
 
-function Window:SetTabStyle(newStyle)
-	if newStyle == self.TabStyle then return end
-	self:CloseFloating()
-
-	local isSide = newStyle == "side"
-	self.TabStyle = newStyle
-	self.TabBar = isSide and self.SideTabBar or self.TopTabBar
-
-	self.TopTabBar.Visible = not isSide
-	self.SideTabBar.Visible = isSide
-	self.TitleDivider.Visible = not isSide
-
-	local footerHeight = self.FooterHeight or 40
-	local tabWidth = self.TabWidth or 140
-	local shellLeft = isSide and (14 + tabWidth + 10) or 14
-
-	self.Shell.Size = UDim2.new(1, -(14 + shellLeft), 1, -(47 + footerHeight + 22))
-	self.Shell.Position = UDim2.fromOffset(shellLeft, 58)
-
-	for _, tab in ipairs(self.Tabs) do
-		local button = tab.Button
-		local label = tab.Label
-		local icon = tab.Icon
-
-		button.Parent = self.TabBar
-		button.Size = isSide and UDim2.new(1, 0, 0, 30) or UDim2.new(0, 0, 1, 0)
-		button.AutomaticSize = isSide and Enum.AutomaticSize.None or Enum.AutomaticSize.X
-
-		if label then
-			label.Size = isSide
-				and UDim2.new(1, icon and -22 or 0, 1, 0)
-				or UDim2.new(0, 0, 1, 0)
-			label.AutomaticSize = isSide and Enum.AutomaticSize.None or Enum.AutomaticSize.X
-		end
-
-		local activeBar = button:FindFirstChild("ActiveBar")
-		if isSide and not activeBar then
-			local bar = New("Frame", {
-				Size = UDim2.fromOffset(2, 0),
-				AnchorPoint = Vector2.new(0, 0.5),
-				Position = UDim2.new(0, 0, 0.5, 0),
-				BackgroundColor3 = Theme.Accent,
-				BackgroundTransparency = 1,
-				BorderSizePixel = 0,
-				Name = "ActiveBar",
-				ZIndex = 2,
-				Parent = button,
-			})
-			Corner(bar, 2)
-		end
-
-		if self.ActiveTab == tab then
-			tab:SetActive(true, false)
-		end
-	end
-
-	if not isSide then
-		for _, child in ipairs(self.SideTabBar:GetChildren()) do
-			if child:IsA("Frame") and not child:IsA("UIListLayout") then
-				child.Parent = self.TopTabBar
-			end
-		end
-		if self.LayoutTabs then self.LayoutTabs() end
-	end
-end
-
 function Window:SetTab(tab)
 	if type(tab) == "string" then
 		for _, t in ipairs(self.Tabs) do
@@ -2965,52 +2900,54 @@ function Library:Window(opts)
 	local tabWidth = opts.TabWidth or 140
 	local footerHeight = opts.Footer == false and 0 or 40
 
-	-- both bars always created, one hidden
-	local topTabBar = New("ScrollingFrame", {
-		Size = UDim2.new(1, -180, 1, 0),
-		Position = UDim2.fromOffset(0, 0),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ClipsDescendants = true,
-		CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.X,
-		ScrollingDirection = Enum.ScrollingDirection.X,
-		ScrollBarThickness = 0,
-		ElasticBehavior = Enum.ElasticBehavior.Never,
-		Visible = tabStyle == "top",
-		Parent = topBar,
-	})
-	local topTabList = List(topTabBar, 18, Enum.FillDirection.Horizontal)
-	topTabList.VerticalAlignment = Enum.VerticalAlignment.Center
+	local tabBar
+	local layoutTabs
 
-	local sideTabBar = New("ScrollingFrame", {
-		Size = UDim2.new(0, tabWidth, 1, -(47 + footerHeight + 22)),
-		Position = UDim2.fromOffset(14, 58),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ClipsDescendants = true,
-		CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollingDirection = Enum.ScrollingDirection.Y,
-		ScrollBarThickness = 0,
-		ElasticBehavior = Enum.ElasticBehavior.Never,
-		Visible = tabStyle == "side",
-		Parent = main,
-	})
-	List(sideTabBar, 4)
+	if tabStyle == "side" then
+		titleDivider.Visible = false
 
-	local tabBar = tabStyle == "side" and sideTabBar or topTabBar
-	if tabStyle == "side" then titleDivider.Visible = false end
+		tabBar = New("ScrollingFrame", {
+			Size = UDim2.new(0, tabWidth, 1, -(47 + footerHeight + 22)),
+			Position = UDim2.fromOffset(14, 58),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ScrollBarThickness = 0,
+			ElasticBehavior = Enum.ElasticBehavior.Never,
+			Parent = main,
+		})
+		List(tabBar, 4)
 
-	local layoutTabs = function()
-		local s = math.max(scale.Scale, 0.05)
-		local width = title.AbsoluteSize.X / s
-		titleDivider.Position = UDim2.new(0, 16 + width + 12, 0.5, 0)
-		local x = 16 + width + 25
-		topTabBar.Position = UDim2.fromOffset(x, 0)
-		topTabBar.Size = UDim2.new(1, -(x + 14), 1, 0)
+		layoutTabs = function() end
+	else
+		tabBar = New("ScrollingFrame", {
+			Size = UDim2.new(1, -180, 1, 0),
+			Position = UDim2.fromOffset(0, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.X,
+			ScrollingDirection = Enum.ScrollingDirection.X,
+			ScrollBarThickness = 0,
+			ElasticBehavior = Enum.ElasticBehavior.Never,
+			Parent = topBar,
+		})
+		local tabList = List(tabBar, 18, Enum.FillDirection.Horizontal)
+		tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+		layoutTabs = function()
+			local s = math.max(scale.Scale, 0.05)
+			local width = title.AbsoluteSize.X / s
+			titleDivider.Position = UDim2.new(0, 16 + width + 12, 0.5, 0)
+			local x = 16 + width + 25
+			tabBar.Position = UDim2.fromOffset(x, 0)
+			tabBar.Size = UDim2.new(1, -(x + 14), 1, 0)
+		end
 	end
-
 	Track(title:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
 	Track(main:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
 	layoutTabs()
@@ -3027,7 +2964,6 @@ function Library:Window(opts)
 	local shell = New("Frame", {
 		Size = UDim2.new(1, -(14 + shellLeft), 1, -(47 + footerHeight + 22)),
 		Position = UDim2.fromOffset(shellLeft, 58),
-		Name = "Shell",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = main,
@@ -3102,12 +3038,6 @@ function Library:Window(opts)
 		Scale = scale,
 		TabStyle = tabStyle,
 		TabWidth = tabWidth,
-		TopTabBar = topTabBar,
-		SideTabBar = sideTabBar,
-		Shell = shell,
-		TitleDivider = titleDivider,
-		FooterHeight = footerHeight,
-		LayoutTabs = layoutTabs,
 		BaseScale = 1,
 		FloatStack = {},
 		UserScale = 1,
@@ -3228,6 +3158,328 @@ function Library:Window(opts)
 			if resizeEnd then resizeEnd:Disconnect() resizeEnd = nil end
 		end)
 	end))
+
+	-- ---- Discord RPC ----
+	if opts.Discord and opts.Discord.Enabled ~= false and opts.Discord.Invite then
+		local inv = opts.Discord.Invite
+		local remember = opts.Discord.RememberJoins ~= false
+		local joined = false
+
+		if remember then
+			pcall(function()
+				if isfile and isfile("facility_discord_" .. inv .. ".dat") then
+					joined = true
+				end
+			end)
+		end
+
+		if not joined then
+			pcall(function()
+				local req = request or http_request or (http and http.request)
+				if not req then return end
+				req({
+					Url = "http://127.0.0.1:6463/rpc?v=1",
+					Method = "POST",
+					Headers = {
+						["Content-Type"] = "application/json",
+						["Origin"] = "https://discord.com",
+					},
+					Body = game:GetService("HttpService"):JSONEncode({
+						cmd = "INVITE_BROWSER",
+						args = { code = inv },
+						nonce = tick(),
+					}),
+				})
+				if remember then
+					pcall(function()
+						if writefile then
+							writefile("facility_discord_" .. inv .. ".dat", "1")
+						end
+					end)
+				end
+			end)
+		end
+	end
+
+	-- ---- Key system ----
+	if opts.KeySystem then
+		local ks = opts.KeySettings or {}
+		local title = ks.Title or "Key System"
+		local subtitle = ks.Subtitle or "Enter your key to continue"
+		local note = ks.Note or ""
+		local fileName = (ks.FileName or "key") .. ".dat"
+		local saveKey = ks.SaveKey ~= false
+		local grabFromSite = ks.GrabKeyFromSite == true
+		local keys = ks.Key or {}
+
+		local keyValid = false
+
+		-- check saved key
+		if saveKey then
+			pcall(function()
+				if isfile and isfile(fileName) then
+					local saved = readfile(fileName)
+					if saved then saved = saved:gsub("%s+", "") end
+					local validKeys = keys
+					if grabFromSite and type(keys) == "table" then
+						local fresh = {}
+						for _, url in ipairs(keys) do
+							pcall(function()
+								local res = game:HttpGet(url)
+								if res then
+									for _, line in ipairs(string.split(res, "\n")) do
+										table.insert(fresh, line:gsub("%s+", ""))
+									end
+								end
+							end)
+						end
+						if #fresh > 0 then validKeys = fresh end
+					end
+					for _, k in ipairs(validKeys) do
+						if saved == k:gsub("%s+", "") then
+							keyValid = true
+							break
+						end
+					end
+				end
+			end)
+		end
+
+		if not keyValid then
+			local gui = New("ScreenGui", {
+				Name = RandomName(),
+				ResetOnSpawn = false,
+				IgnoreGuiInset = true,
+				AutoLocalize = false,
+				ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+				DisplayOrder = MAX_DISPLAY_ORDER,
+			})
+			ParentGui(gui)
+
+			local scrim = New("Frame", {
+				Size = UDim2.fromScale(1, 1),
+				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+				BackgroundTransparency = 0.45,
+				BorderSizePixel = 0,
+				Parent = gui,
+			})
+
+			local card = New("Frame", {
+				Size = UDim2.fromOffset(360, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				BackgroundColor3 = Theme.Window,
+				BorderSizePixel = 0,
+				Parent = gui,
+			})
+			Corner(card, 10)
+			Stroke(card, Theme.WindowBorder)
+			Pad(card, 20, 24, 24, 24)
+			List(card, 12)
+
+			local titleLabel = Label(card, title, Theme.TextBright, 16, Theme.FontMedium)
+			titleLabel.Size = UDim2.new(1, 0, 0, 20)
+
+			local subLabel = Label(card, subtitle, Theme.TextDim)
+			subLabel.Size = UDim2.new(1, 0, 0, 16)
+
+			if note ~= "" then
+				local noteLabel = Label(card, note, Theme.TextDim, 11)
+				noteLabel.Size = UDim2.new(1, 0, 0, 0)
+				noteLabel.AutomaticSize = Enum.AutomaticSize.Y
+				noteLabel.TextWrapped = true
+			end
+
+			New("Frame", {
+				Size = UDim2.new(1, 0, 0, 1),
+				BackgroundColor3 = Theme.BorderSoft,
+				BorderSizePixel = 0,
+				Parent = card,
+			})
+
+			local field = New("Frame", {
+				Size = UDim2.new(1, 0, 0, 32),
+				BackgroundColor3 = Theme.Field,
+				BorderSizePixel = 0,
+				ClipsDescendants = true,
+				Parent = card,
+			})
+			Corner(field, 6)
+			Stroke(field, Theme.Border)
+
+			local box = New("TextBox", {
+				Size = UDim2.new(1, -16, 1, 0),
+				Position = UDim2.fromOffset(8, 0),
+				BackgroundTransparency = 1,
+				Text = "",
+				PlaceholderText = "enter key...",
+				PlaceholderColor3 = Theme.TextDim,
+				TextColor3 = Theme.TextBright,
+				TextSize = Theme.TextSize,
+				Font = Theme.Font,
+				ClearTextOnFocus = false,
+				Parent = field,
+			})
+
+			local errorLabel = Label(card, "", Theme.Danger, 11)
+			errorLabel.Size = UDim2.new(1, 0, 0, 14)
+			errorLabel.Visible = false
+
+			local btn = New("TextButton", {
+				Size = UDim2.new(1, 0, 0, 32),
+				BackgroundColor3 = Theme.Accent,
+				AutoButtonColor = false,
+				Text = "validate",
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextSize = Theme.TextSize,
+				Font = Theme.FontMedium,
+				BorderSizePixel = 0,
+				Parent = card,
+			})
+			Corner(btn, 6)
+
+			local done = false
+			local function validate()
+				if done then return end
+				local input = box.Text:gsub("%s+", "")
+				if input == "" then return end
+
+				local validKeys = keys
+				if grabFromSite then
+					local fresh = {}
+					for _, url in ipairs(keys) do
+						pcall(function()
+							local res = game:HttpGet(url)
+							if res then
+									for _, line in ipairs(string.split(res, "\n")) do
+									table.insert(fresh, line:gsub("%s+", ""))
+								end
+							end
+						end)
+					end
+					if #fresh > 0 then validKeys = fresh end
+				end
+
+				local ok = false
+				for _, k in ipairs(validKeys) do
+					if input == k:gsub("%s+", "") then ok = true break end
+				end
+
+				if ok then
+					done = true
+					if saveKey then
+						pcall(function()
+							if writefile then writefile(fileName, input) end
+						end)
+					end
+					gui:Destroy()
+				else
+					errorLabel.Text = "invalid key, try again."
+					errorLabel.Visible = true
+				end
+			end
+
+			Track(btn.Activated:Connect(validate))
+			Track(box.FocusLost:Connect(function(enter) if enter then validate() end end))
+
+			repeat task.wait() until done
+			gui:Destroy()
+		end
+	end
+
+	-- ---- Loading card ----
+	if opts.Loading ~= false then
+		local loadOpts = type(opts.Loading) == "table" and opts.Loading or {}
+		local gui = New("ScreenGui", {
+			Name = RandomName(),
+			ResetOnSpawn = false,
+			IgnoreGuiInset = true,
+			AutoLocalize = false,
+			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+			DisplayOrder = MAX_DISPLAY_ORDER - 1,
+		})
+		ParentGui(gui)
+
+		local scrim = New("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+			BackgroundTransparency = 0.5,
+			BorderSizePixel = 0,
+			Parent = gui,
+		})
+
+		local card = New("Frame", {
+			Size = UDim2.fromOffset(320, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundColor3 = Theme.Window,
+			BorderSizePixel = 0,
+			Parent = gui,
+		})
+		Corner(card, 10)
+		Stroke(card, Theme.WindowBorder)
+		Pad(card, 20, 24, 24, 24)
+		List(card, 10)
+
+		local titleRow = New("Frame", {
+			Size = UDim2.new(1, 0, 0, 20),
+			BackgroundTransparency = 1,
+			Parent = card,
+		})
+		local tName = Label(titleRow, loadOpts.Title or opts.Title or "facility", Theme.TextBright, 15, Theme.FontMedium)
+		tName.Size = UDim2.new(0, 0, 1, 0)
+		tName.AutomaticSize = Enum.AutomaticSize.X
+		local tSuffix = Label(titleRow, loadOpts.Suffix or opts.Suffix or ".app", Theme.Accent, 15, Theme.FontMedium)
+		tSuffix.Position = UDim2.new(0, tName.AbsoluteSize.X + 2, 0, 0)
+		tSuffix.Size = UDim2.new(0, 0, 1, 0)
+		tSuffix.AutomaticSize = Enum.AutomaticSize.X
+
+		local subLabel = Label(card, loadOpts.Subtitle or "loading...", Theme.TextDim)
+		subLabel.Size = UDim2.new(1, 0, 0, 16)
+
+		local track = New("Frame", {
+			Size = UDim2.new(1, 0, 0, 3),
+			BackgroundColor3 = Theme.Track,
+			BorderSizePixel = 0,
+			Parent = card,
+		})
+		Corner(track, 2)
+		local fill = New("Frame", {
+			Size = UDim2.fromScale(0, 1),
+			BackgroundColor3 = Theme.Accent,
+			BorderSizePixel = 0,
+			Parent = track,
+		})
+		Corner(fill, 2)
+
+		Tween(fill, { Size = UDim2.fromScale(0.7, 1) }, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out))
+
+		local loading = {
+			Gui = gui,
+			Fill = fill,
+		}
+
+		function loading:SetProgress(v)
+			Tween(fill, { Size = UDim2.fromScale(math.clamp(v, 0, 1), 1) }, EASE_FAST)
+		end
+
+		function loading:SetText(text)
+			subLabel.Text = text
+		end
+
+		function loading:Dismiss()
+			Tween(fill, { Size = UDim2.fromScale(1, 1) }, EASE_FAST)
+			task.wait(0.3)
+			Tween(card, { BackgroundTransparency = 1 }, EASE_FAST)
+			Tween(scrim, { BackgroundTransparency = 1 }, EASE_FAST)
+			task.wait(0.25)
+			gui:Destroy()
+		end
+
+		window.Loading = loading
+	end
 
 	if opts.Cursor then
 		Library:SetCursor(true, type(opts.Cursor) == "table" and opts.Cursor or nil)
