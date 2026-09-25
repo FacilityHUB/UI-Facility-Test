@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2971,15 +2973,13 @@ function Library:Window(opts)
 
 			-- right side: Get Key + description
 			local announce = Label(card, "Get Key", Theme.TextBright, 14, Theme.FontMedium)
-			announce.AnchorPoint = Vector2.new(1, 0)
-			announce.Position = UDim2.new(0.914, 0, 0.139, 0)
-			announce.Size = UDim2.fromOffset(200, 13)
+			announce.Position = UDim2.new(0.545, 0, 0.139, 0)
+			announce.Size = UDim2.fromOffset(190, 13)
 
 			local descr = New("TextLabel", {
 				BackgroundTransparency = 1,
-				AnchorPoint = Vector2.new(1, 0),
-				Size = UDim2.fromOffset(200, 62),
-				Position = UDim2.new(0.914, 0, 0.219, 0),
+				Size = UDim2.fromOffset(190, 62),
+				Position = UDim2.new(0.545, 0, 0.219, 0),
 				TextColor3 = Theme.TextDim,
 				RichText = true,
 				Text = note ~= "" and note or ('To obtain the key, simply click on <font color="rgb(232,161,168)">Get-Key</font>. This will copy the key link to your clipboard. For any help, don\'t hesitate to ask on our Discord by clicking on <font color="rgb(120,170,230)">Discord</font>.'),
@@ -2988,6 +2988,16 @@ function Library:Window(opts)
 				TextWrapped = true,
 				Font = Theme.Font,
 				TextSize = 12,
+				Parent = card,
+			})
+
+			-- vertical divider
+			New("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(0, 1, 1, -44),
+				BackgroundColor3 = Theme.BorderSoft,
+				BorderSizePixel = 0,
 				Parent = card,
 			})
 
@@ -4238,7 +4248,12 @@ function Library:CreateCursor(opts)
 			follow()
 		end
 	end))
-	Track(RunService.RenderStepped:Connect(follow))
+
+	local bindName = "FacilityCursor_" .. RandomName(6)
+	pcall(function()
+		RunService:BindToRenderStep(bindName, Enum.RenderPriority.Last.Value, follow)
+	end)
+	self.CursorBind = bindName
 
 	self.CursorGui = gui
 	self.CursorHolder = holder
@@ -4363,6 +4378,10 @@ function Library:Destroy()
 	table.clear(self.Windows)
 	if self.NotifyGui then self.NotifyGui:Destroy() self.NotifyGui = nil end
 	if self.MobileGui then self.MobileGui:Destroy() self.MobileGui = nil self.MobileButton = nil end
+	if self.CursorBind then
+		pcall(function() RunService:UnbindFromRenderStep(self.CursorBind) end)
+		self.CursorBind = nil
+	end
 	if self.CursorGui then self.CursorGui:Destroy() self.CursorGui = nil self.CursorHolder = nil end
 	if self.HotkeyGui then self.HotkeyGui:Destroy() self.HotkeyGui = nil self.HotkeyPanel = nil end
 	for index = #self.Panels, 1, -1 do
