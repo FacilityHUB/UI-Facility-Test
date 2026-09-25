@@ -1,4 +1,5 @@
-
+-- Facility addon | InterfaceManager
+-- Reglages de l'interface elle-meme : touche du menu, echelle, dechargement.
 
 return function(Library)
 	local InterfaceManager = {}
@@ -27,8 +28,6 @@ return function(Library)
 		self.Settings = self.Settings or { MenuKey = "RightShift", Scale = 100, Hotkeys = false, Layout = "top" }
 
 		local section = tab:Section("interface", column or 1)
-		local window = self:GetWindow()
-
 		local menuKey = section:Keybind({
 			Text = "menu key",
 			Flag = "interface_menu_key",
@@ -53,10 +52,6 @@ return function(Library)
 			end,
 		})
 
-		local currentLayout = (window and window.TabStyle) or self.Settings.Layout or "top"
-
-		section:Divider()
-		section:Label("layout")
 		section:ButtonRow({
 			{
 				Text = "layout: top",
@@ -105,8 +100,9 @@ return function(Library)
 		menuKey:Set(self.Settings.MenuKey)
 		scale:Set(self.Settings.Scale)
 		hotkeys:Set(self.Settings.Hotkeys == true)
-		if self.Settings.Layout and self.Settings.Layout ~= (window and window.TabStyle or "top") then
-			if window then window:SetTabStyle(self.Settings.Layout) end
+		local win = self:GetWindow()
+		if self.Settings.Layout and win and self.Settings.Layout ~= win.TabStyle then
+			win:SetTabStyle(self.Settings.Layout)
 		end
 
 		self.Section = section
