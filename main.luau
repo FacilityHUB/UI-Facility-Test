@@ -161,7 +161,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.07-stealth"
+Library.Version = "2026.09.07-switchlayout"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2490,6 +2490,72 @@ function Window:TabDivider(opts)
 	return { Instance = holder, Line = line }
 end
 
+function Window:SetTabStyle(newStyle)
+	if newStyle == self.TabStyle then return end
+	self:CloseFloating()
+
+	local isSide = newStyle == "side"
+	self.TabStyle = newStyle
+	self.TabBar = isSide and self.SideTabBar or self.TopTabBar
+
+	self.TopTabBar.Visible = not isSide
+	self.SideTabBar.Visible = isSide
+	self.TitleDivider.Visible = not isSide
+
+	local footerHeight = self.FooterHeight or 40
+	local tabWidth = self.TabWidth or 140
+	local shellLeft = isSide and (14 + tabWidth + 10) or 14
+
+	self.Shell.Size = UDim2.new(1, -(14 + shellLeft), 1, -(47 + footerHeight + 22))
+	self.Shell.Position = UDim2.fromOffset(shellLeft, 58)
+
+	for _, tab in ipairs(self.Tabs) do
+		local button = tab.Button
+		local label = tab.Label
+		local icon = tab.Icon
+
+		button.Parent = self.TabBar
+		button.Size = isSide and UDim2.new(1, 0, 0, 30) or UDim2.new(0, 0, 1, 0)
+		button.AutomaticSize = isSide and Enum.AutomaticSize.None or Enum.AutomaticSize.X
+
+		if label then
+			label.Size = isSide
+				and UDim2.new(1, icon and -22 or 0, 1, 0)
+				or UDim2.new(0, 0, 1, 0)
+			label.AutomaticSize = isSide and Enum.AutomaticSize.None or Enum.AutomaticSize.X
+		end
+
+		local activeBar = button:FindFirstChild("ActiveBar")
+		if isSide and not activeBar then
+			local bar = New("Frame", {
+				Size = UDim2.fromOffset(2, 0),
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.new(0, 0, 0.5, 0),
+				BackgroundColor3 = Theme.Accent,
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				Name = "ActiveBar",
+				ZIndex = 2,
+				Parent = button,
+			})
+			Corner(bar, 2)
+		end
+
+		if self.ActiveTab == tab then
+			tab:SetActive(true, false)
+		end
+	end
+
+	if not isSide then
+		for _, child in ipairs(self.SideTabBar:GetChildren()) do
+			if child:IsA("Frame") and not child:IsA("UIListLayout") then
+				child.Parent = self.TopTabBar
+			end
+		end
+		if self.LayoutTabs then self.LayoutTabs() end
+	end
+end
+
 function Window:SetTab(tab)
 	if type(tab) == "string" then
 		for _, t in ipairs(self.Tabs) do
@@ -2899,54 +2965,52 @@ function Library:Window(opts)
 	local tabWidth = opts.TabWidth or 140
 	local footerHeight = opts.Footer == false and 0 or 40
 
-	local tabBar
-	local layoutTabs
+	-- both bars always created, one hidden
+	local topTabBar = New("ScrollingFrame", {
+		Size = UDim2.new(1, -180, 1, 0),
+		Position = UDim2.fromOffset(0, 0),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		ScrollBarThickness = 0,
+		ElasticBehavior = Enum.ElasticBehavior.Never,
+		Visible = tabStyle == "top",
+		Parent = topBar,
+	})
+	local topTabList = List(topTabBar, 18, Enum.FillDirection.Horizontal)
+	topTabList.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	if tabStyle == "side" then
-		titleDivider.Visible = false
+	local sideTabBar = New("ScrollingFrame", {
+		Size = UDim2.new(0, tabWidth, 1, -(47 + footerHeight + 22)),
+		Position = UDim2.fromOffset(14, 58),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		ScrollBarThickness = 0,
+		ElasticBehavior = Enum.ElasticBehavior.Never,
+		Visible = tabStyle == "side",
+		Parent = main,
+	})
+	List(sideTabBar, 4)
 
-		tabBar = New("ScrollingFrame", {
-			Size = UDim2.new(0, tabWidth, 1, -(47 + footerHeight + 22)),
-			Position = UDim2.fromOffset(14, 58),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			ClipsDescendants = true,
-			CanvasSize = UDim2.new(),
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
-			ScrollingDirection = Enum.ScrollingDirection.Y,
-			ScrollBarThickness = 0,
-			ElasticBehavior = Enum.ElasticBehavior.Never,
-			Parent = main,
-		})
-		List(tabBar, 4)
+	local tabBar = tabStyle == "side" and sideTabBar or topTabBar
+	if tabStyle == "side" then titleDivider.Visible = false end
 
-		layoutTabs = function() end
-	else
-		tabBar = New("ScrollingFrame", {
-			Size = UDim2.new(1, -180, 1, 0),
-			Position = UDim2.fromOffset(0, 0),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			ClipsDescendants = true,
-			CanvasSize = UDim2.new(),
-			AutomaticCanvasSize = Enum.AutomaticSize.X,
-			ScrollingDirection = Enum.ScrollingDirection.X,
-			ScrollBarThickness = 0,
-			ElasticBehavior = Enum.ElasticBehavior.Never,
-			Parent = topBar,
-		})
-		local tabList = List(tabBar, 18, Enum.FillDirection.Horizontal)
-		tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-
-		layoutTabs = function()
-			local s = math.max(scale.Scale, 0.05)
-			local width = title.AbsoluteSize.X / s
-			titleDivider.Position = UDim2.new(0, 16 + width + 12, 0.5, 0)
-			local x = 16 + width + 25
-			tabBar.Position = UDim2.fromOffset(x, 0)
-			tabBar.Size = UDim2.new(1, -(x + 14), 1, 0)
-		end
+	local layoutTabs = function()
+		local s = math.max(scale.Scale, 0.05)
+		local width = title.AbsoluteSize.X / s
+		titleDivider.Position = UDim2.new(0, 16 + width + 12, 0.5, 0)
+		local x = 16 + width + 25
+		topTabBar.Position = UDim2.fromOffset(x, 0)
+		topTabBar.Size = UDim2.new(1, -(x + 14), 1, 0)
 	end
+
 	Track(title:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
 	Track(main:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
 	layoutTabs()
@@ -2963,6 +3027,7 @@ function Library:Window(opts)
 	local shell = New("Frame", {
 		Size = UDim2.new(1, -(14 + shellLeft), 1, -(47 + footerHeight + 22)),
 		Position = UDim2.fromOffset(shellLeft, 58),
+		Name = "Shell",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = main,
@@ -3037,6 +3102,12 @@ function Library:Window(opts)
 		Scale = scale,
 		TabStyle = tabStyle,
 		TabWidth = tabWidth,
+		TopTabBar = topTabBar,
+		SideTabBar = sideTabBar,
+		Shell = shell,
+		TitleDivider = titleDivider,
+		FooterHeight = footerHeight,
+		LayoutTabs = layoutTabs,
 		BaseScale = 1,
 		FloatStack = {},
 		UserScale = 1,
