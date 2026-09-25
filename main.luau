@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -3463,7 +3461,7 @@ function Library:Window(opts)
 	end))
 
 	Track(RunService.RenderStepped:Connect(function()
-		if targetPos then
+		if dragging and targetPos then
 			main.Position = main.Position:Lerp(targetPos, 0.2)
 		end
 	end))
@@ -4225,14 +4223,22 @@ function Library:CreateCursor(opts)
 		bar(Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(thickness, thickness))
 	end
 
-	Track(RunService.RenderStepped:Connect(function()
+	local function follow()
 		if not gui.Enabled then return end
 		local position = UserInputService:GetMouseLocation()
 		if not gui.IgnoreGuiInset then
 			position = position - GuiService:GetGuiInset()
 		end
 		holder.Position = UDim2.fromOffset(position.X, position.Y)
+	end
+
+	Track(UserInputService.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch then
+			follow()
+		end
 	end))
+	Track(RunService.RenderStepped:Connect(follow))
 
 	self.CursorGui = gui
 	self.CursorHolder = holder
