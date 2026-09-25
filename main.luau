@@ -1,4 +1,3 @@
---1
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -3410,77 +3409,54 @@ function Library:Window(opts)
 		})
 
 		local card = New("Frame", {
-			Size = UDim2.fromOffset(320, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromOffset(340, 90),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
 			BackgroundColor3 = Theme.Window,
 			BorderSizePixel = 0,
 			Parent = gui,
 		})
-		Corner(card, 10)
+		Corner(card, 12)
 		Stroke(card, Theme.WindowBorder)
-		Pad(card, 20, 24, 24, 24)
-		List(card, 10)
 
-		local titleRow = New("Frame", {
-			Size = UDim2.new(1, 0, 0, 20),
-			BackgroundTransparency = 1,
-			Parent = card,
-		})
-		local tName = Label(titleRow, loadOpts.Title or opts.Title or "facility", Theme.TextBright, 15, Theme.FontMedium)
-		tName.Size = UDim2.new(0, 0, 1, 0)
+		local tName = Label(card, loadOpts.Title or opts.Title or "facility", Theme.TextBright, 15, Theme.FontMedium)
+		tName.Position = UDim2.fromOffset(20, 18)
+		tName.Size = UDim2.new(0, 0, 0, 18)
 		tName.AutomaticSize = Enum.AutomaticSize.X
-		local tSuffix = Label(titleRow, loadOpts.Suffix or opts.Suffix or ".app", Theme.Accent, 15, Theme.FontMedium)
-		tSuffix.Position = UDim2.new(0, tName.AbsoluteSize.X + 2, 0, 0)
-		tSuffix.Size = UDim2.new(0, 0, 1, 0)
+
+		local tSuffix = Label(card, loadOpts.Suffix or opts.Suffix or ".app", Theme.Accent, 15, Theme.FontMedium)
+		tSuffix.Position = UDim2.new(0, 22 + tName.AbsoluteSize.X, 0, 18)
+		tSuffix.Size = UDim2.new(0, 0, 0, 18)
 		tSuffix.AutomaticSize = Enum.AutomaticSize.X
 
-		local subLabel = Label(card, loadOpts.Subtitle or "loading...", Theme.TextDim)
-		subLabel.Size = UDim2.new(1, 0, 0, 16)
+		local subLabel = Label(card, loadOpts.Subtitle or "loading...", Theme.TextDim, 11)
+		subLabel.Position = UDim2.fromOffset(20, 46)
+		subLabel.Size = UDim2.new(0.6, 0, 0, 14)
 
-		local track = New("Frame", {
-			Size = UDim2.new(1, 0, 0, 3),
-			BackgroundColor3 = Theme.Track,
-			BorderSizePixel = 0,
-			Parent = card,
-		})
-		Corner(track, 2)
-		local fill = New("Frame", {
-			Size = UDim2.fromScale(0, 1),
-			BackgroundColor3 = Theme.Accent,
-			BorderSizePixel = 0,
-			Parent = track,
-		})
-		Corner(fill, 2)
+		local buildLabel = Label(card, "Build " .. (Library.Version or "?"), Theme.TextDim, 10)
+		buildLabel.AnchorPoint = Vector2.new(1, 1)
+		buildLabel.Position = UDim2.new(1, -16, 1, -16)
+		buildLabel.Size = UDim2.new(0, 0, 0, 12)
+		buildLabel.AutomaticSize = Enum.AutomaticSize.X
+		buildLabel.TextXAlignment = Enum.TextXAlignment.Right
 
-		Tween(fill, { Size = UDim2.fromScale(0.7, 1) }, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out))
+		local loading = { Gui = gui }
 
-		local loading = {
-			Gui = gui,
-			Fill = fill,
-		}
-
-		function loading:SetProgress(v)
-			Tween(fill, { Size = UDim2.fromScale(math.clamp(v, 0, 1), 1) }, EASE_FAST)
-		end
+		function loading:SetProgress(v) end
 
 		function loading:SetText(text)
 			subLabel.Text = text
 		end
 
 		function loading:Dismiss()
-			Tween(fill, { Size = UDim2.fromScale(1, 1) }, EASE_FAST)
-			task.wait(0.3)
 			Tween(card, { BackgroundTransparency = 1 }, EASE_FAST)
 			Tween(scrim, { BackgroundTransparency = 1 }, EASE_FAST)
-			task.wait(0.25)
+			task.wait(0.3)
 			gui:Destroy()
 		end
 
 		window.Loading = loading
 	end
-
 	if opts.Cursor then
 		Library:SetCursor(true, type(opts.Cursor) == "table" and opts.Cursor or nil)
 	end
