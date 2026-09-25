@@ -5,7 +5,7 @@ return function(Library)
 	local InterfaceManager = {}
 	InterfaceManager.Library = Library
 	InterfaceManager.Folder = "Facility"
-	InterfaceManager.Flags = { "interface_menu_key", "interface_scale", "interface_hotkeys" }
+	InterfaceManager.Flags = { "interface_menu_key", "interface_scale", "interface_hotkeys", "interface_layout" }
 
 	function InterfaceManager:SetLibrary(lib)
 		self.Library = lib or Library
@@ -25,7 +25,7 @@ return function(Library)
 	end
 
 	function InterfaceManager:BuildInterfaceSection(tab, column)
-		self.Settings = self.Settings or { MenuKey = "RightShift", Scale = 100, Hotkeys = false }
+		self.Settings = self.Settings or { MenuKey = "RightShift", Scale = 100, Hotkeys = false, Layout = "top" }
 
 		local section = tab:Section("interface", column or 1)
 		local window = self:GetWindow()
@@ -52,6 +52,28 @@ return function(Library)
 				local win = self:GetWindow()
 				if win then win:SetUserScale(v / 100) end
 			end,
+		})
+
+		local window = self:GetWindow()
+		local currentLayout = (window and window.TabStyle) or self.Settings.Layout or "top"
+
+		section:ButtonRow({
+			{
+				Text = "layout: top",
+				Callback = function()
+					self.Settings.Layout = "top"
+					local win = self:GetWindow()
+					if win then win:SetTabStyle("top") end
+				end,
+			},
+			{
+				Text = "layout: side",
+				Callback = function()
+					self.Settings.Layout = "side"
+					local win = self:GetWindow()
+					if win then win:SetTabStyle("side") end
+				end,
+			},
 		})
 
 		local hotkeys = section:Toggle({
@@ -83,6 +105,9 @@ return function(Library)
 		menuKey:Set(self.Settings.MenuKey)
 		scale:Set(self.Settings.Scale)
 		hotkeys:Set(self.Settings.Hotkeys == true)
+		if self.Settings.Layout and self.Settings.Layout ~= (window and window.TabStyle or "top") then
+			if window then window:SetTabStyle(self.Settings.Layout) end
+		end
 
 		self.Section = section
 		return section
