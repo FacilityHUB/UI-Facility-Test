@@ -1,3 +1,5 @@
+-- 1 
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2850,6 +2852,16 @@ function Library:Window(opts)
 		BorderSizePixel = 0,
 		Parent = gui,
 	})
+	local shadow = New("Frame", {
+		Size = UDim2.new(1, 28, 1, 28),
+		Position = UDim2.fromOffset(-14, -10),
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		BackgroundTransparency = 0.65,
+		BorderSizePixel = 0,
+		ZIndex = main.ZIndex - 1,
+		Parent = main,
+	})
+	Corner(shadow, 16)
 	Corner(main, 10)
 	Stroke(main, Theme.WindowBorder)
 	local scale = New("UIScale", { Parent = main })
@@ -3066,19 +3078,32 @@ function Library:Window(opts)
 	fit()
 
 	local dragging, dragStart, startPos, moveConn, endConn
+	local targetPos = main.Position
+	local smoothConn
 	Track(topBar.InputBegan:Connect(function(input)
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1
 			and input.UserInputType ~= Enum.UserInputType.Touch then return end
 		dragging = true
 		dragStart = input.Position
 		startPos = main.Position
+		targetPos = main.Position
 		window:CloseFloating()
+		smoothConn = RunService.Heartbeat:Connect(function(dt)
+			if not dragging then
+				if smoothConn then smoothConn:Disconnect() smoothConn = nil end
+				return
+			end
+			local factor = 1 - (0.04 ^ dt)
+			local cx = main.Position.X.Offset + (targetPos.X.Offset - main.Position.X.Offset) * factor
+			local cy = main.Position.Y.Offset + (targetPos.Y.Offset - main.Position.Y.Offset) * factor
+			main.Position = UDim2.new(startPos.X.Scale, cx, startPos.Y.Scale, cy)
+		end)
 		moveConn = UserInputService.InputChanged:Connect(function(move)
 			if not dragging then return end
 			if move.UserInputType == Enum.UserInputType.MouseMovement
 				or move.UserInputType == Enum.UserInputType.Touch then
 				local delta = move.Position - dragStart
-				main.Position = UDim2.new(
+				targetPos = UDim2.new(
 					startPos.X.Scale, startPos.X.Offset + delta.X,
 					startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 			end
@@ -3263,9 +3288,20 @@ function Library:Window(opts)
 				Parent = gui,
 			})
 
+			-- shadow
+			local ksShadow = New("Frame", {
+				Size = UDim2.fromOffset(548, 166),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+				BackgroundTransparency = 0.65,
+				BorderSizePixel = 0,
+				Parent = gui,
+			})
+			Corner(ksShadow, 16)
+
 			local card = New("Frame", {
-				Size = UDim2.fromOffset(360, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.fromOffset(520, 148),
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.5),
 				BackgroundColor3 = Theme.Window,
@@ -3274,35 +3310,73 @@ function Library:Window(opts)
 			})
 			Corner(card, 10)
 			Stroke(card, Theme.WindowBorder)
-			Pad(card, 20, 24, 24, 24)
-			List(card, 12)
 
-			local titleLabel = Label(card, title, Theme.TextBright, 16, Theme.FontMedium)
-			titleLabel.Size = UDim2.new(1, 0, 0, 20)
-
-			local subLabel = Label(card, subtitle, Theme.TextDim)
-			subLabel.Size = UDim2.new(1, 0, 0, 16)
-
-			if note ~= "" then
-				local noteLabel = Label(card, note, Theme.TextDim, 11)
-				noteLabel.Size = UDim2.new(1, 0, 0, 0)
-				noteLabel.AutomaticSize = Enum.AutomaticSize.Y
-				noteLabel.TextWrapped = true
-			end
-
-			New("Frame", {
-				Size = UDim2.new(1, 0, 0, 1),
-				BackgroundColor3 = Theme.BorderSoft,
+			-- top bar
+			local topbar = New("Frame", {
+				Size = UDim2.new(1, 0, 0, 38),
+				BackgroundColor3 = Theme.TopBar,
 				BorderSizePixel = 0,
 				Parent = card,
 			})
+			Corner(topbar, 10)
+			New("Frame", {
+				Size = UDim2.new(1, 0, 0, 10),
+				Position = UDim2.fromOffset(0, 28),
+				BackgroundColor3 = Theme.TopBar,
+				BorderSizePixel = 0,
+				Parent = topbar,
+			})
+			New("Frame", {
+				Size = UDim2.new(1, 0, 0, 1),
+				Position = UDim2.fromOffset(0, 37),
+				BackgroundColor3 = Theme.WindowBorder,
+				BorderSizePixel = 0,
+				Parent = topbar,
+			})
+
+			local ksName = Label(topbar, title, Theme.TextBright, 14, Theme.FontMedium)
+			ksName.Position = UDim2.fromOffset(14, 0)
+			ksName.Size = UDim2.new(0, 0, 1, 0)
+			ksName.AutomaticSize = Enum.AutomaticSize.X
+
+			local ksSub = Label(topbar, subtitle, Theme.TextDim, 12)
+			ksSub.Position = UDim2.new(0, 14 + ksName.AbsoluteSize.X + 8, 0, 0)
+			ksSub.Size = UDim2.new(1, -180, 1, 0)
+			ksSub.TextXAlignment = Enum.TextXAlignment.Left
+
+			-- body
+			local body = New("Frame", {
+				Size = UDim2.new(1, 0, 1, -38),
+				Position = UDim2.fromOffset(0, 38),
+				BackgroundTransparency = 1,
+				Parent = card,
+			})
+
+			-- divider vertical
+			New("Frame", {
+				Size = UDim2.new(0, 1, 1, -24),
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				BackgroundColor3 = Theme.BorderSoft,
+				BorderSizePixel = 0,
+				Parent = body,
+			})
+
+			-- left: input + validate
+			local leftCol = New("Frame", {
+				Size = UDim2.new(0.5, -1, 1, 0),
+				BackgroundTransparency = 1,
+				Parent = body,
+			})
+			List(leftCol, 8)
+			Pad(leftCol, 14, 14, 14, 14)
 
 			local field = New("Frame", {
-				Size = UDim2.new(1, 0, 0, 32),
+				Size = UDim2.new(1, 0, 0, 30),
 				BackgroundColor3 = Theme.Field,
 				BorderSizePixel = 0,
 				ClipsDescendants = true,
-				Parent = card,
+				Parent = leftCol,
 			})
 			Corner(field, 6)
 			Stroke(field, Theme.Border)
@@ -3312,33 +3386,109 @@ function Library:Window(opts)
 				Position = UDim2.fromOffset(8, 0),
 				BackgroundTransparency = 1,
 				Text = "",
-				PlaceholderText = "enter key...",
+				PlaceholderText = "Input script key here...",
 				PlaceholderColor3 = Theme.TextDim,
-				TextColor3 = Theme.TextBright,
+				TextColor3 = Theme.Text,
 				TextSize = Theme.TextSize,
 				Font = Theme.Font,
 				ClearTextOnFocus = false,
 				Parent = field,
 			})
 
-			local errorLabel = Label(card, "", Theme.Danger, 11)
-			errorLabel.Size = UDim2.new(1, 0, 0, 14)
-			errorLabel.Visible = false
-
-			local btn = New("TextButton", {
-				Size = UDim2.new(1, 0, 0, 32),
+			local validateBtn = New("TextButton", {
+				Size = UDim2.new(1, 0, 0, 30),
 				BackgroundColor3 = Theme.Accent,
 				AutoButtonColor = false,
-				Text = "validate",
+				Text = "Validate Key",
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = Theme.TextSize,
 				Font = Theme.FontMedium,
 				BorderSizePixel = 0,
-				Parent = card,
+				Parent = leftCol,
 			})
-			Corner(btn, 6)
+			Corner(validateBtn, 6)
 
-			local done = false
+			local errorLabel = Label(leftCol, "", Theme.Danger, 11)
+			errorLabel.Size = UDim2.new(1, 0, 0, 13)
+			errorLabel.Visible = false
+
+			-- right: note + buttons
+			local rightCol = New("Frame", {
+				Size = UDim2.new(0.5, -1, 1, 0),
+				Position = UDim2.fromScale(0.5, 0),
+				BackgroundTransparency = 1,
+				Parent = body,
+			})
+			List(rightCol, 8)
+			Pad(rightCol, 14, 14, 14, 14)
+
+			local noteTitle = Label(rightCol, "Get Key", Theme.TextBright, Theme.TextSize, Theme.FontMedium)
+			noteTitle.Size = UDim2.new(1, 0, 0, 16)
+
+			local noteLabel = Label(rightCol, note ~= "" and note or "No method of obtaining the key is provided.", Theme.TextDim, 11)
+			noteLabel.Size = UDim2.new(1, 0, 0, 0)
+			noteLabel.AutomaticSize = Enum.AutomaticSize.Y
+			noteLabel.TextWrapped = true
+
+			local btnRow = New("Frame", {
+				Size = UDim2.new(1, 0, 0, 28),
+				BackgroundTransparency = 1,
+				Parent = rightCol,
+			})
+			local btnList = List(btnRow, 8, Enum.FillDirection.Horizontal)
+			btnList.SortOrder = Enum.SortOrder.LayoutOrder
+
+			local btnCount = (ks.GetKey and 1 or 0) + (ks.Discord and 1 or 0)
+
+			if ks.GetKey then
+				local w = btnCount == 2 and UDim2.new(0.5, -4, 1, 0) or UDim2.new(1, 0, 1, 0)
+				local gkBtn = New("TextButton", {
+					Size = w,
+					BackgroundColor3 = Theme.Accent,
+					AutoButtonColor = false,
+					Text = "Get-Key",
+					TextColor3 = Color3.fromRGB(255, 255, 255),
+					TextSize = Theme.TextSize,
+					Font = Theme.FontMedium,
+					BorderSizePixel = 0,
+					LayoutOrder = 1,
+					Parent = btnRow,
+				})
+				Corner(gkBtn, 6)
+				Track(gkBtn.Activated:Connect(function()
+					pcall(function() if setclipboard then setclipboard(ks.GetKey) end end)
+				end))
+			end
+
+			if ks.Discord then
+				local w = btnCount == 2 and UDim2.new(0.5, -4, 1, 0) or UDim2.new(1, 0, 1, 0)
+				local dcBtn = New("TextButton", {
+					Size = w,
+					BackgroundColor3 = Theme.Field,
+					AutoButtonColor = false,
+					Text = "Discord",
+					TextColor3 = Theme.TextBright,
+					TextSize = Theme.TextSize,
+					Font = Theme.FontMedium,
+					BorderSizePixel = 0,
+					LayoutOrder = 2,
+					Parent = btnRow,
+				})
+				Corner(dcBtn, 6)
+				Stroke(dcBtn, Theme.Border)
+				Track(dcBtn.Activated:Connect(function()
+					pcall(function()
+						local req = request or http_request or (http and http.request)
+						if req then
+							req({ Url = "http://127.0.0.1:6463/rpc?v=1", Method = "POST",
+								Headers = { ["Content-Type"] = "application/json", ["Origin"] = "https://discord.com" },
+								Body = game:GetService("HttpService"):JSONEncode({ cmd = "INVITE_BROWSER", args = { code = ks.Discord }, nonce = tick() }) })
+						end
+					end)
+				end))
+			end
+
+						local done = false
 			local function validate()
 				if done then return end
 				local input = box.Text:gsub("%s+", "")
