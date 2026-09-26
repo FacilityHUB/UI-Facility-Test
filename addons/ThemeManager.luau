@@ -1,4 +1,6 @@
---1
+-- Facility addon | ThemeManager
+-- Presets de couleurs, edition par element, recoloration a chaud.
+
 return function(Library)
 	local HttpService = game:GetService("HttpService")
 	local Theme = Library.Theme
@@ -34,6 +36,7 @@ return function(Library)
 		{ "TextMarked", "text warning" },
 		{ "TextCode", "text success" },
 		{ "Danger", "text danger" },
+		{ "Shadow", "shadow" },
 	}
 
 	ThemeManager.Order = {
@@ -154,6 +157,10 @@ return function(Library)
 			Theme.TextCode = Color3.fromRGB(96, 200, 96)
 			Theme.Danger = Color3.fromRGB(226, 102, 102)
 		end
+
+		Theme.Shadow = preset.Light
+			and Color3.fromRGB(150, 150, 160)
+			or shade(bg, -14)
 
 		self.Current = name
 		self:SetAccent(preset.Accent)
