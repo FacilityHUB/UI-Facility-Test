@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -164,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-sectiontitle"
+Library.Version = "2026.09.09-sectiontitle-2"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2126,7 +2128,17 @@ local function CreateSection(window, parent, title, order)
 	local header, htitle, hchev
 
 	if borderTitle then
-		-- the title sits on the stroke, its own background hides the line
+		-- the title sits on the stroke, its own background hides the line.
+		-- it lives in a wrapper that escapes the card padding so the anchor
+		-- is measured from the real border, not from the padded area
+		local titleLayer = New("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.fromOffset(-14, -18),
+			BackgroundTransparency = 1,
+			ZIndex = 3,
+			Parent = frame,
+		})
+
 		header = New("TextButton", {
 			Size = UDim2.fromOffset(0, 18),
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -2136,7 +2148,7 @@ local function CreateSection(window, parent, title, order)
 			AutoButtonColor = false,
 			Text = "",
 			ZIndex = 3,
-			Parent = frame,
+			Parent = titleLayer,
 		})
 		Pad(header, 0, 6, 0, 6)
 
