@@ -1,5 +1,4 @@
--- Facility addon | ThemeManager
--- Presets de couleurs, edition par element, recoloration a chaud.
+
 
 return function(Library)
 	local HttpService = game:GetService("HttpService")
@@ -158,9 +157,11 @@ return function(Library)
 			Theme.Danger = Color3.fromRGB(226, 102, 102)
 		end
 
+		-- kept off the derived grey ramp so it can never collide with
+		-- another palette entry, which would break the repaint mapping
 		Theme.Shadow = preset.Light
-			and Color3.fromRGB(150, 150, 160)
-			or shade(bg, -14)
+			and Color3.fromRGB(148, 150, 158)
+			or Color3.fromRGB(12, 10, 16)
 
 		self.Current = name
 		self:SetAccent(preset.Accent)
