@@ -1,3 +1,5 @@
+-- 1 
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -4235,6 +4237,7 @@ function Library:ServerBrowser(opts)
 	local HttpService = game:GetService("HttpService")
 	local TeleportService = game:GetService("TeleportService")
 	local player = Players.LocalPlayer
+	local placeId = opts.PlaceId or game.PlaceId
 
 	local gui = New("ScreenGui", {
 		Name = RandomName(),
@@ -4431,7 +4434,7 @@ function Library:ServerBrowser(opts)
 		Track(joinBtn.Activated:Connect(function()
 			Library:Notify("servers", "teleporting...", 3)
 			pcall(function()
-				TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+				TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
 			end)
 		end))
 	end
@@ -4444,7 +4447,7 @@ function Library:ServerBrowser(opts)
 
 		task.spawn(function()
 			local ok, result = pcall(function()
-				local url = "https://games.roblox.com/v1/games/" .. game.PlaceId
+				local url = "https://games.roblox.com/v1/games/" .. placeId
 					.. "/servers/Public?sortOrder=Asc&limit=100"
 				return HttpService:JSONDecode(game:HttpGet(url))
 			end)
@@ -4457,7 +4460,7 @@ function Library:ServerBrowser(opts)
 
 			local servers = {}
 			for _, srv in ipairs(result.data) do
-				if srv.id ~= game.JobId then
+				if not (placeId == game.PlaceId and srv.id == game.JobId) then
 					table.insert(servers, srv)
 				end
 			end
