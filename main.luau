@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -3140,29 +3138,31 @@ function Library:Window(opts)
 			do
 				local dragging, dragStart, startPos = false, nil, nil
 				local targetPosition = card.Position
+				local activeInput = nil
 				Track(card.InputBegan:Connect(function(input)
 					if input.UserInputType ~= Enum.UserInputType.MouseButton1
 						and input.UserInputType ~= Enum.UserInputType.Touch then return end
+					if dragging then return end
 					dragging = true
+					activeInput = input
 					dragStart = input.Position
 					startPos = card.Position
 					input.Changed:Connect(function()
-						if input.UserInputState == Enum.UserInputState.End then dragging = false end
+						if input.UserInputState == Enum.UserInputState.End then
+							dragging = false
+							activeInput = nil
+						end
 					end)
 				end))
 				Track(UserInputService.InputChanged:Connect(function(input)
 					if not dragging then return end
+					if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 					if input.UserInputType ~= Enum.UserInputType.MouseMovement
 						and input.UserInputType ~= Enum.UserInputType.Touch then return end
 					local delta = input.Position - dragStart
-					targetPosition = UDim2.new(
+					card.Position = UDim2.new(
 						startPos.X.Scale, startPos.X.Offset + delta.X,
 						startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-				end))
-				Track(RunService.RenderStepped:Connect(function()
-					if targetPosition then
-						card.Position = card.Position:Lerp(targetPosition, 0.2)
-					end
 				end))
 			end
 
@@ -3469,12 +3469,15 @@ function Library:Window(opts)
 	fit()
 
 	local dragging, dragStart, startPos = false, nil, nil
+	local activeInput = nil
 	local targetPos = main.Position
 
 	Track(topBar.InputBegan:Connect(function(input)
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1
 			and input.UserInputType ~= Enum.UserInputType.Touch then return end
+		if dragging then return end
 		dragging = true
+		activeInput = input
 		dragStart = input.Position
 		startPos = main.Position
 		targetPos = main.Position
@@ -3482,24 +3485,21 @@ function Library:Window(opts)
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then
 				dragging = false
+				activeInput = nil
 			end
 		end)
 	end))
 
 	Track(UserInputService.InputChanged:Connect(function(input)
 		if not dragging then return end
+		-- only the finger or cursor that started the drag may move the window
+		if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 		if input.UserInputType ~= Enum.UserInputType.MouseMovement
 			and input.UserInputType ~= Enum.UserInputType.Touch then return end
 		local delta = input.Position - dragStart
-		targetPos = UDim2.new(
+		main.Position = UDim2.new(
 			startPos.X.Scale, startPos.X.Offset + delta.X,
 			startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end))
-
-	Track(RunService.RenderStepped:Connect(function()
-		if dragging and targetPos then
-			main.Position = main.Position:Lerp(targetPos, 0.2)
-		end
 	end))
 
 	local grip = New("TextButton", {
@@ -4498,30 +4498,32 @@ function Library:ServerBrowser(opts)
 	do
 		local dragging, dragStart, startPos = false, nil, nil
 		local targetPos = main.Position
+		local activeInput = nil
 		Track(topBar.InputBegan:Connect(function(input)
 			if input.UserInputType ~= Enum.UserInputType.MouseButton1
 				and input.UserInputType ~= Enum.UserInputType.Touch then return end
+			if dragging then return end
 			dragging = true
+			activeInput = input
 			dragStart = input.Position
 			startPos = main.Position
 			targetPos = main.Position
 			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then dragging = false end
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+					activeInput = nil
+				end
 			end)
 		end))
 		Track(UserInputService.InputChanged:Connect(function(input)
 			if not dragging then return end
+			if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 			if input.UserInputType ~= Enum.UserInputType.MouseMovement
 				and input.UserInputType ~= Enum.UserInputType.Touch then return end
 			local delta = input.Position - dragStart
-			targetPos = UDim2.new(
+			main.Position = UDim2.new(
 				startPos.X.Scale, startPos.X.Offset + delta.X,
 				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end))
-		Track(RunService.RenderStepped:Connect(function()
-			if dragging and targetPos then
-				main.Position = main.Position:Lerp(targetPos, 0.2)
-			end
 		end))
 	end
 
@@ -4593,13 +4595,21 @@ function Library:CreateMobileButton(opts)
 	end
 
 	local moved, origin, startPos, moveConn, endConn
+	local pressing = false
+	local lastToggle = 0
+
 	Track(button.InputBegan:Connect(function(input)
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1
 			and input.UserInputType ~= Enum.UserInputType.Touch then return end
+		-- touch also emits a mouse event on mobile, ignore the duplicate
+		if pressing then return end
+		pressing = true
+
 		moved = false
 		origin = input.Position
 		startPos = button.Position
 		Tween(button, { BackgroundColor3 = Theme.FieldHover }, EASE_FAST)
+
 		moveConn = UserInputService.InputChanged:Connect(function(move)
 			if move.UserInputType ~= Enum.UserInputType.MouseMovement
 				and move.UserInputType ~= Enum.UserInputType.Touch then return end
@@ -4609,12 +4619,19 @@ function Library:CreateMobileButton(opts)
 				startPos.X.Scale, startPos.X.Offset + delta.X,
 				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 		end)
+
 		endConn = UserInputService.InputEnded:Connect(function(ended)
-			if ended.UserInputType ~= input.UserInputType then return end
+			if ended.UserInputType ~= Enum.UserInputType.MouseButton1
+				and ended.UserInputType ~= Enum.UserInputType.Touch then return end
 			if moveConn then moveConn:Disconnect() moveConn = nil end
 			if endConn then endConn:Disconnect() endConn = nil end
+			pressing = false
 			Tween(button, { BackgroundColor3 = Theme.Section }, EASE_FAST)
-			if not moved then Library:ToggleUI() end
+
+			if not moved and (tick() - lastToggle) > 0.25 then
+				lastToggle = tick()
+				Library:ToggleUI()
+			end
 		end)
 	end))
 
