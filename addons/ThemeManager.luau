@@ -159,6 +159,11 @@ return function(Library)
 
 		self.Current = name
 		self:SetAccent(preset.Accent)
+		-- SetAccent sort avant Repaint si l'accent du preset est invalide.
+		-- Sans ce repaint, le theme serait modifie en memoire et sauvegarde,
+		-- mais rien ne serait redessine avant le prochain lancement.
+		self.Library:Repaint()
+		if self.AutoSave then self:Save() end
 		return true
 	end
 
@@ -185,11 +190,24 @@ return function(Library)
 		if not ok or type(data) ~= "table" then return false end
 
 		if data.Preset then self:Apply(data.Preset) end
+
+		local alphas = self.Library.ThemeAlpha or {}
 		for key, hex in pairs(data.Colors or {}) do
 			local color, alpha = fromHex(hex)
 			if color and Theme[key] ~= nil then
-				self.Library:SetColor(key, color, alpha)
+				Theme[key] = color
+				if alpha ~= nil then alphas[key] = math.clamp(alpha, 0, 1) end
 			end
+		end
+		-- un seul repaint pour tout le fichier, au lieu d'un par couleur
+		self.Library:Repaint()
+		if self.Pickers then
+			for key, picker in pairs(self.Pickers) do
+				pcall(picker.Set, picker, Theme[key], alphas[key] or 1, true)
+			end
+		end
+		if self.PresetBox and self.Current then
+			pcall(self.PresetBox.Set, self.PresetBox, self.Current, true)
 		end
 		return true
 	end
@@ -265,7 +283,6 @@ return function(Library)
 				DefaultAlpha = alphas[key] or 1,
 				Callback = function(color, alpha)
 					self.Library:SetColor(key, color, alpha)
-					self.Library:Repaint()
 					dirty = true
 					if key == "Accent" then
 						self:SetAccent(color)
@@ -319,6 +336,7 @@ return function(Library)
 
 		self.Modal = modal
 		self.Pickers = pickers
+		self.PresetBox = presetBox
 		return modal
 	end
 
