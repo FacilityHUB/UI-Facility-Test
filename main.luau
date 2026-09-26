@@ -48,7 +48,7 @@ local function ParentGui(gui)
 	end
 end
 
-local Theme = {
+local RawTheme = {
 	Window        = Color3.fromRGB(26, 26, 28),
 	WindowAlpha   = 0.012,
 	WindowBorder  = Color3.fromRGB(52, 52, 56),
@@ -79,6 +79,22 @@ local Theme = {
 	Radius        = 6,
 	GearIcon      = "rbxassetid://6031280882",
 }
+
+-- Le binding instance <-> cle de theme se fait par lookup inverse de la valeur
+-- Color3 au moment ou l'instance est construite (voir New). Si quelqu'un ecrit
+-- dans le theme sans passer par Repaint, l'index devient perime et toute
+-- instance creee ensuite n'est plus enregistree dans Painted : elle ne suit
+-- plus les changements de theme jusqu'au rechargement du script.
+-- Le proxy ci-dessous marque l'index comme perime des qu'une couleur change,
+-- et New le reconstruit paresseusement avant de construire quoi que ce soit.
+local ThemeDirty = false
+local Theme = setmetatable({}, {
+	__index = RawTheme,
+	__newindex = function(_, key, value)
+		RawTheme[key] = value
+		if typeof(value) == "Color3" then ThemeDirty = true end
+	end,
+})
 
 local function AccentHex()
 	return string.format("#%02X%02X%02X",
@@ -217,11 +233,23 @@ function Library:SetColor(key, color, alpha)
 	return true
 end
 
+-- Binding explicite : a utiliser quand une instance doit suivre une cle de
+-- theme alors que sa couleur de depart n'est pas exactement la valeur du
+-- theme (couleur custom, derivee, teintee...). Le lookup inverse de New ne
+-- peut pas la retrouver dans ces cas-la.
+function Library:Bind(instance, property, key)
+	if typeof(instance) ~= "Instance" or Theme[key] == nil then return instance end
+	instance[property] = Theme[key]
+	table.insert(Painted, { instance, property, key })
+	return instance
+end
+
 function Library:Repaint()
 	if #Painted == 0 then
 		warn("Facility | repaint registry is empty, main.luau is probably outdated")
 	end
 	IndexTheme()
+	ThemeDirty = false
 	for i = #Painted, 1, -1 do
 		local entry = Painted[i]
 		local ok = pcall(function()
@@ -300,6 +328,10 @@ local function Track(conn)
 end
 
 local function New(class, props, children)
+	if ThemeDirty then
+		IndexTheme()
+		ThemeDirty = false
+	end
 	local inst = Instance.new(class)
 	local parent = nil
 	for k, v in pairs(props or {}) do
@@ -4834,8 +4866,22 @@ Library.FileSystem = FileSystem
 if getgenv then
 	pcall(function() getgenv().Facility = Library end)
 end
-Library.SaveManager = Library:LoadAddon("SaveManager")
-Library.InterfaceManager = Library:LoadAddon("InterfaceManager")
-Library.ThemeManager = Library:LoadAddon("ThemeManager")
+-- Chargement paresseux des addons. Les charger ici, immediatement, les
+-- telechargeait depuis Library.BaseUrl par defaut : un script appelant qui
+-- redefinit BaseUrl apres chunk() se retrouvait avec les addons de l'autre
+-- depot, et ses modifications locales etaient ignorees. Le metatable differe
+-- le telechargement au premier acces, donc apres que l'appelant ait pu poser
+-- son BaseUrl.
+setmetatable(Library, {
+	__index = function(self, key)
+		local paths = rawget(self, "AddonPaths")
+		if paths and paths[key] then
+			local module = self:LoadAddon(key)
+			rawset(self, key, module)
+			return module
+		end
+		return nil
+	end,
+})
 
 return Library
