@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -166,7 +164,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-watermark"
+Library.Version = "2026.09.09-watermark-2"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -4621,8 +4619,8 @@ Library.BadgePresets = {
 	vip       = Color3.fromRGB(196, 118, 232),
 	free      = Color3.fromRGB(120, 124, 132),
 	beta      = Color3.fromRGB(96, 170, 232),
-	alpha     = Color3.fromRGB(226, 102, 102),
-	dev       = Color3.fromRGB(226, 102, 102),
+	alpha     = Color3.fromRGB(228, 96, 108),
+	dev       = Color3.fromRGB(214, 88, 96),
 	owner     = Color3.fromRGB(232, 120, 170),
 	lifetime  = Color3.fromRGB(96, 200, 140),
 }
@@ -4725,15 +4723,17 @@ function Library:Watermark(opts)
 		badgeFrame = New("Frame", {
 			Size = UDim2.fromOffset(0, 16),
 			AutomaticSize = Enum.AutomaticSize.X,
-			BackgroundColor3 = badgeColor,
 			BorderSizePixel = 0,
 			LayoutOrder = nextOrder(),
 			Parent = row,
 		})
+		-- set outside New so the repaint registry never claims this colour
+		badgeFrame.BackgroundColor3 = badgeColor
 		Corner(badgeFrame, 4)
 		Pad(badgeFrame, 0, 6, 0, 6)
 
-		badgeLabel = Label(badgeFrame, opts.Badge, Color3.fromRGB(28, 24, 26), 11, Theme.FontMedium)
+		badgeLabel = Label(badgeFrame, opts.Badge, Theme.TextBright, 11, Theme.FontMedium)
+		badgeLabel.TextColor3 = Color3.fromRGB(28, 24, 26)
 		badgeLabel.Size = UDim2.new(0, 0, 1, 0)
 		badgeLabel.AutomaticSize = Enum.AutomaticSize.X
 	end
