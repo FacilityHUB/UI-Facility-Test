@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -164,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-sectiontitle-5"
+Library.Version = "2026.09.09-sectiontitle-6"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2139,8 +2141,8 @@ local function CreateSection(window, parent, title, order)
 		header = New("TextButton", {
 			Size = UDim2.fromOffset(0, 16),
 			AutomaticSize = Enum.AutomaticSize.X,
-			AnchorPoint = Vector2.new(0, 0),
-			Position = UDim2.fromOffset(12, 8),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromOffset(12, 0),
 			BackgroundTransparency = 1,
 			AutoButtonColor = false,
 			Text = "",
