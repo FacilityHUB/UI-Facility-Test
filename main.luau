@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -166,7 +164,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-watermark-3"
+Library.Version = "2026.09.09-watermark-4"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -4615,19 +4613,6 @@ function Library:ServerBrowser(opts)
 	return api
 end
 
-Library.BadgePresets = {
-	-- each preset is a gradient : { start, end }
-	pro       = { Color3.fromRGB(255, 206, 84),  Color3.fromRGB(246, 150, 44) },
-	premium   = { Color3.fromRGB(255, 226, 138), Color3.fromRGB(238, 170, 56) },
-	vip       = { Color3.fromRGB(198, 132, 255), Color3.fromRGB(140, 96, 246) },
-	owner     = { Color3.fromRGB(255, 150, 196), Color3.fromRGB(226, 86, 150) },
-	beta      = { Color3.fromRGB(122, 196, 255), Color3.fromRGB(68, 138, 240) },
-	alpha     = { Color3.fromRGB(255, 132, 132), Color3.fromRGB(226, 70, 96) },
-	dev       = { Color3.fromRGB(255, 120, 106), Color3.fromRGB(214, 60, 84) },
-	lifetime  = { Color3.fromRGB(126, 240, 170), Color3.fromRGB(58, 196, 132) },
-	free      = { Color3.fromRGB(176, 180, 190), Color3.fromRGB(128, 132, 144) },
-}
-
 function Library:Watermark(opts)
 	if self.WatermarkApi then return self.WatermarkApi end
 	opts = opts or {}
@@ -4691,43 +4676,6 @@ function Library:Watermark(opts)
 	local titleLabel = Label(topLeft, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
 	titleLabel.Size = UDim2.new(0, 0, 1, 0)
 	titleLabel.AutomaticSize = Enum.AutomaticSize.X
-
-	local badgeFrame, badgeLabel, badgeGradient
-	if opts.Badge then
-		local preset = opts.BadgeColor
-		if type(preset) == "string" then
-			preset = Library.BadgePresets[string.lower(preset)]
-		end
-		preset = preset or { Color3.fromRGB(232, 161, 168), Color3.fromRGB(198, 120, 200) }
-
-		badgeFrame = New("Frame", {
-			Size = UDim2.fromOffset(0, 17),
-			AutomaticSize = Enum.AutomaticSize.X,
-			BorderSizePixel = 0,
-			LayoutOrder = 2,
-			Parent = topLeft,
-		})
-		-- colours set outside New so the repaint registry never claims them
-		badgeFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		Corner(badgeFrame, 5)
-		Pad(badgeFrame, 0, 7, 0, 7)
-
-		badgeGradient = Instance.new("UIGradient")
-		badgeGradient.Color = ColorSequence.new(preset[1], preset[2] or preset[1])
-		badgeGradient.Rotation = 25
-		badgeGradient.Parent = badgeFrame
-
-		local glow = Instance.new("UIStroke")
-		glow.Color = preset[1]
-		glow.Thickness = 1
-		glow.Transparency = 0.45
-		glow.Parent = badgeFrame
-
-		badgeLabel = Label(badgeFrame, opts.Badge, Theme.TextBright, 11, Theme.FontMedium)
-		badgeLabel.Size = UDim2.new(0, 0, 1, 0)
-		badgeLabel.AutomaticSize = Enum.AutomaticSize.X
-		badgeLabel.TextColor3 = Color3.fromRGB(26, 22, 26)
-	end
 
 	local userHolder = New("Frame", {
 		Size = UDim2.new(0, 0, 1, 0),
@@ -4866,19 +4814,6 @@ function Library:Watermark(opts)
 
 	function api:SetTitle(text)
 		titleLabel.Text = tostring(text or "")
-	end
-
-	function api:SetBadge(text, color)
-		if not badgeFrame then return end
-		badgeLabel.Text = tostring(text or "")
-		if color then
-			if type(color) == "string" then
-				color = Library.BadgePresets[string.lower(color)]
-			end
-			if type(color) == "table" and badgeGradient then
-				badgeGradient.Color = ColorSequence.new(color[1], color[2] or color[1])
-			end
-		end
 	end
 
 	--------------------------------------------------------------
