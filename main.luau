@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -166,7 +164,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-sectiontitle-2"
+Library.Version = "2026.09.09-sectiontitle-3"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2122,23 +2120,22 @@ local function CreateSection(window, parent, title, order)
 	})
 	Corner(frame, 7)
 	Stroke(frame, Theme.SectionBorder)
-	Pad(frame, borderTitle and 18 or 12, 14, 14, 14)
-	local frameList = List(frame, 0)
+
+	-- the padded, laid out area, kept separate so an absolutely positioned
+	-- title is not captured by the list layout
+	local inner = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Parent = frame,
+	})
+	Pad(inner, borderTitle and 18 or 12, 14, 14, 14)
+	local frameList = List(inner, 0)
 
 	local header, htitle, hchev
 
 	if borderTitle then
-		-- the title sits on the stroke, its own background hides the line.
-		-- it lives in a wrapper that escapes the card padding so the anchor
-		-- is measured from the real border, not from the padded area
-		local titleLayer = New("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			Position = UDim2.fromOffset(-14, -18),
-			BackgroundTransparency = 1,
-			ZIndex = 3,
-			Parent = frame,
-		})
-
+		-- the title sits on the stroke, its own background hides the line
 		header = New("TextButton", {
 			Size = UDim2.fromOffset(0, 18),
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -2148,7 +2145,7 @@ local function CreateSection(window, parent, title, order)
 			AutoButtonColor = false,
 			Text = "",
 			ZIndex = 3,
-			Parent = titleLayer,
+			Parent = frame,
 		})
 		Pad(header, 0, 6, 0, 6)
 
@@ -2176,7 +2173,7 @@ local function CreateSection(window, parent, title, order)
 			BackgroundTransparency = 1,
 			AutoButtonColor = false,
 			Text = "",
-			Parent = frame,
+			Parent = inner,
 		})
 		htitle = Label(header, title, Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
 		htitle.Size = UDim2.new(1, -16, 1, 0)
@@ -2194,13 +2191,8 @@ local function CreateSection(window, parent, title, order)
 		BackgroundTransparency = 1,
 		ClipsDescendants = false,
 		LayoutOrder = 2,
-		Parent = frame,
+		Parent = inner,
 	})
-	if borderTitle then
-		-- the header is absolutely positioned, reclaim the space it left
-		frameList.Padding = UDim.new(0, 0)
-		body.Position = UDim2.fromOffset(0, 0)
-	end
 	local content = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
