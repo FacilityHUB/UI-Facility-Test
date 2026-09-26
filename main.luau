@@ -1,5 +1,3 @@
--- 1 
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -163,7 +161,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.07-keysystem"
+Library.Version = "2026.09.08-teleport"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -4432,10 +4430,24 @@ function Library:ServerBrowser(opts)
 		})
 
 		Track(joinBtn.Activated:Connect(function()
-			Library:Notify("servers", "teleporting...", 3)
-			pcall(function()
-				TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+			Library:Notify(opts.Title or "servers", "teleporting...", 3)
+
+			-- TeleportAsync is the modern API and passes where the legacy
+			-- one is refused, fall back if it is unavailable or fails
+			local ok = pcall(function()
+				local teleportOptions = Instance.new("TeleportOptions")
+				teleportOptions.ServerInstanceId = server.id
+				TeleportService:TeleportAsync(placeId, { player }, teleportOptions)
 			end)
+
+			if not ok then
+				local legacy = pcall(function()
+					TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+				end)
+				if not legacy then
+					Library:Error(opts.Title or "servers", "teleport refused by the game.", 5)
+				end
+			end
 		end))
 	end
 
