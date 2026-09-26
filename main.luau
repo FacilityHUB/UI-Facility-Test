@@ -59,7 +59,6 @@ local Theme = {
 	FieldHover    = Color3.fromRGB(48, 48, 52),
 	Border        = Color3.fromRGB(60, 60, 65),
 	BorderSoft    = Color3.fromRGB(45, 45, 49),
-	Shadow        = Color3.fromRGB(20, 20, 20),
 	PopupBg       = Color3.fromRGB(38, 38, 42),
 	PopupBorder   = Color3.fromRGB(62, 62, 67),
 	Track         = Color3.fromRGB(58, 58, 62),
@@ -105,7 +104,6 @@ local THEME_ORDER = {
 	"Group", "GroupBorder", "Field", "FieldHover", "Border", "BorderSoft",
 	"PopupBg", "PopupBorder", "Track", "Text", "TextDim", "TextBright",
 	"TextMarked", "TextCode", "Danger", "Accent", "AccentSoft", "AccentDim",
-	"Shadow",
 }
 
 local function IndexTheme()
@@ -166,7 +164,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-shadow"
+Library.Version = "2026.09.09-sectiontitle-6"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -3032,7 +3030,7 @@ function Library:Window(opts)
 				BackgroundTransparency = 1,
 				ZIndex = 0,
 				Image = "rbxassetid://5587865193",
-				ImageColor3 = Theme.Shadow,
+				ImageColor3 = Color3.fromRGB(20, 20, 20),
 				Size = UDim2.new(1.6, 0, 1.3, 0),
 				Position = UDim2.fromScale(0.5, 0.5),
 				ImageTransparency = 0.5,
@@ -3301,7 +3299,7 @@ function Library:Window(opts)
 		Size = UDim2.new(1.6, 0, 1.3, 0),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://5587865193",
-		ImageColor3 = Theme.Shadow,
+		ImageColor3 = Color3.fromRGB(20, 20, 20),
 		ImageTransparency = 0.5,
 		ZIndex = 0,
 		Parent = shadowHolder,
@@ -4324,7 +4322,7 @@ function Library:ServerBrowser(opts)
 		BackgroundTransparency = 1,
 		ZIndex = 0,
 		Image = "rbxassetid://5587865193",
-		ImageColor3 = Theme.Shadow,
+		ImageColor3 = Color3.fromRGB(20, 20, 20),
 		Size = UDim2.new(1.6, 0, 1.3, 0),
 		Position = UDim2.fromScale(0.5, 0.5),
 		ImageTransparency = 0.5,
