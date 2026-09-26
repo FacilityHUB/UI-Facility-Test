@@ -164,7 +164,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-nowatermark"
+Library.Version = "2026.09.09-sectiontitle-6"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -233,16 +233,10 @@ function Library:Repaint()
 		end)
 		if not ok then table.remove(Painted, i) end
 	end
-	-- a throw here used to abort the whole repaint, leaving every hook below
-	-- unrun, so stateful colours kept their old value until a restart
-	pcall(function() self:RefreshHotkeys() end)
-
+	self:RefreshHotkeys()
 	for i = #self.RepaintHooks, 1, -1 do
-		local ok, err = pcall(self.RepaintHooks[i])
-		if not ok then
-			warn("Facility | repaint hook failed: " .. tostring(err))
-			table.remove(self.RepaintHooks, i)
-		end
+		local ok = pcall(self.RepaintHooks[i])
+		if not ok then table.remove(self.RepaintHooks, i) end
 	end
 end
 
