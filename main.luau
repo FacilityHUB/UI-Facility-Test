@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -164,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-watermark-2"
+Library.Version = "2026.09.09-watermark-3"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -4614,15 +4616,16 @@ function Library:ServerBrowser(opts)
 end
 
 Library.BadgePresets = {
-	pro       = Color3.fromRGB(232, 185, 72),
-	premium   = Color3.fromRGB(232, 185, 72),
-	vip       = Color3.fromRGB(196, 118, 232),
-	free      = Color3.fromRGB(120, 124, 132),
-	beta      = Color3.fromRGB(96, 170, 232),
-	alpha     = Color3.fromRGB(228, 96, 108),
-	dev       = Color3.fromRGB(214, 88, 96),
-	owner     = Color3.fromRGB(232, 120, 170),
-	lifetime  = Color3.fromRGB(96, 200, 140),
+	-- each preset is a gradient : { start, end }
+	pro       = { Color3.fromRGB(255, 206, 84),  Color3.fromRGB(246, 150, 44) },
+	premium   = { Color3.fromRGB(255, 226, 138), Color3.fromRGB(238, 170, 56) },
+	vip       = { Color3.fromRGB(198, 132, 255), Color3.fromRGB(140, 96, 246) },
+	owner     = { Color3.fromRGB(255, 150, 196), Color3.fromRGB(226, 86, 150) },
+	beta      = { Color3.fromRGB(122, 196, 255), Color3.fromRGB(68, 138, 240) },
+	alpha     = { Color3.fromRGB(255, 132, 132), Color3.fromRGB(226, 70, 96) },
+	dev       = { Color3.fromRGB(255, 120, 106), Color3.fromRGB(214, 60, 84) },
+	lifetime  = { Color3.fromRGB(126, 240, 170), Color3.fromRGB(58, 196, 132) },
+	free      = { Color3.fromRGB(176, 180, 190), Color3.fromRGB(128, 132, 144) },
 }
 
 function Library:Watermark(opts)
@@ -4644,7 +4647,7 @@ function Library:Watermark(opts)
 	ParentGui(gui)
 
 	local bar = New("Frame", {
-		Size = UDim2.fromOffset(0, 30),
+		Size = UDim2.fromOffset(0, 62),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Position = opts.Position or UDim2.fromOffset(18, 18),
 		BackgroundColor3 = Theme.Window,
@@ -4652,19 +4655,113 @@ function Library:Watermark(opts)
 		Active = true,
 		Parent = gui,
 	})
-	Corner(bar, 8)
+	Corner(bar, 10)
 	Stroke(bar, Theme.WindowBorder)
-	Pad(bar, 0, 12, 0, 12)
+	Pad(bar, 9, 14, 9, 14)
 
-	local row = New("Frame", {
+	local stack = New("Frame", {
 		Size = UDim2.new(0, 0, 1, 0),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
 		Parent = bar,
 	})
-	local rowList = List(row, 9, Enum.FillDirection.Horizontal)
-	rowList.VerticalAlignment = Enum.VerticalAlignment.Center
-	rowList.SortOrder = Enum.SortOrder.LayoutOrder
+	local stackList = List(stack, 7)
+	stackList.SortOrder = Enum.SortOrder.LayoutOrder
+
+	--------------------------------------------------------------
+	-- top row : title, badge, username
+	--------------------------------------------------------------
+
+	local topRow = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 18),
+		BackgroundTransparency = 1,
+		LayoutOrder = 1,
+		Parent = stack,
+	})
+
+	local topLeft = New("Frame", {
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Parent = topRow,
+	})
+	local topLeftList = List(topLeft, 8, Enum.FillDirection.Horizontal)
+	topLeftList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+	local titleLabel = Label(topLeft, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
+	titleLabel.Size = UDim2.new(0, 0, 1, 0)
+	titleLabel.AutomaticSize = Enum.AutomaticSize.X
+
+	local badgeFrame, badgeLabel, badgeGradient
+	if opts.Badge then
+		local preset = opts.BadgeColor
+		if type(preset) == "string" then
+			preset = Library.BadgePresets[string.lower(preset)]
+		end
+		preset = preset or { Color3.fromRGB(232, 161, 168), Color3.fromRGB(198, 120, 200) }
+
+		badgeFrame = New("Frame", {
+			Size = UDim2.fromOffset(0, 17),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BorderSizePixel = 0,
+			LayoutOrder = 2,
+			Parent = topLeft,
+		})
+		-- colours set outside New so the repaint registry never claims them
+		badgeFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		Corner(badgeFrame, 5)
+		Pad(badgeFrame, 0, 7, 0, 7)
+
+		badgeGradient = Instance.new("UIGradient")
+		badgeGradient.Color = ColorSequence.new(preset[1], preset[2] or preset[1])
+		badgeGradient.Rotation = 25
+		badgeGradient.Parent = badgeFrame
+
+		local glow = Instance.new("UIStroke")
+		glow.Color = preset[1]
+		glow.Thickness = 1
+		glow.Transparency = 0.45
+		glow.Parent = badgeFrame
+
+		badgeLabel = Label(badgeFrame, opts.Badge, Theme.TextBright, 11, Theme.FontMedium)
+		badgeLabel.Size = UDim2.new(0, 0, 1, 0)
+		badgeLabel.AutomaticSize = Enum.AutomaticSize.X
+		badgeLabel.TextColor3 = Color3.fromRGB(26, 22, 26)
+	end
+
+	local userHolder = New("Frame", {
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		BackgroundTransparency = 1,
+		Parent = topRow,
+	})
+	local userList = List(userHolder, 5, Enum.FillDirection.Horizontal)
+	userList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+	local userIcon = AttachIcon(userHolder, "user", Theme.TextDim, 13)
+	if userIcon then userIcon.LayoutOrder = 1 end
+
+	local nameLabel = Label(userHolder, player and player.Name or "player", Theme.Text, Theme.TextSize)
+	nameLabel.Size = UDim2.new(0, 0, 1, 0)
+	nameLabel.AutomaticSize = Enum.AutomaticSize.X
+	nameLabel.LayoutOrder = 2
+
+	--------------------------------------------------------------
+	-- bottom row : fps, ping, uptime
+	--------------------------------------------------------------
+
+	local bottomRow = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 16),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		LayoutOrder = 2,
+		Parent = stack,
+	})
+	local bottomList = List(bottomRow, 10, Enum.FillDirection.Horizontal)
+	bottomList.VerticalAlignment = Enum.VerticalAlignment.Center
+	bottomList.SortOrder = Enum.SortOrder.LayoutOrder
 
 	local order = 0
 	local function nextOrder()
@@ -4673,23 +4770,22 @@ function Library:Watermark(opts)
 	end
 
 	local function separator()
-		local line = New("Frame", {
-			Size = UDim2.fromOffset(1, 14),
+		New("Frame", {
+			Size = UDim2.fromOffset(1, 12),
 			BackgroundColor3 = Theme.BorderSoft,
 			BorderSizePixel = 0,
 			LayoutOrder = nextOrder(),
-			Parent = row,
+			Parent = bottomRow,
 		})
-		return line
 	end
 
-	local function field(iconName, text, color)
+	local function field(iconName, text, unit)
 		local holder = New("Frame", {
 			Size = UDim2.new(0, 0, 1, 0),
 			AutomaticSize = Enum.AutomaticSize.X,
 			BackgroundTransparency = 1,
 			LayoutOrder = nextOrder(),
-			Parent = row,
+			Parent = bottomRow,
 		})
 		local list = List(holder, 5, Enum.FillDirection.Horizontal)
 		list.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -4697,57 +4793,32 @@ function Library:Watermark(opts)
 		local icon = AttachIcon(holder, iconName, Theme.TextDim, 13)
 		if icon then icon.LayoutOrder = 1 end
 
-		local label = Label(holder, text, color or Theme.Text, Theme.TextSize)
-		label.Size = UDim2.new(0, 0, 1, 0)
-		label.AutomaticSize = Enum.AutomaticSize.X
-		label.LayoutOrder = 2
+		local value = Label(holder, text, Theme.TextBright, Theme.TextSize, Theme.FontMedium)
+		value.Size = UDim2.new(0, 0, 1, 0)
+		value.AutomaticSize = Enum.AutomaticSize.X
+		value.LayoutOrder = 2
 
-		return label
-	end
-
-	-- title
-	local titleLabel = Label(row, opts.Title or "facility", Theme.TextBright, Theme.TextSize, Theme.FontMedium)
-	titleLabel.Size = UDim2.new(0, 0, 1, 0)
-	titleLabel.AutomaticSize = Enum.AutomaticSize.X
-	titleLabel.LayoutOrder = nextOrder()
-
-	-- badge
-	local badgeFrame, badgeLabel
-	if opts.Badge then
-		local badgeColor = opts.BadgeColor
-		if type(badgeColor) == "string" then
-			badgeColor = Library.BadgePresets[string.lower(badgeColor)]
+		local suffix
+		if unit then
+			suffix = Label(holder, unit, Theme.TextDim, Theme.TextSize - 1)
+			suffix.Size = UDim2.new(0, 0, 1, 0)
+			suffix.AutomaticSize = Enum.AutomaticSize.X
+			suffix.LayoutOrder = 3
 		end
-		badgeColor = badgeColor or Theme.Accent
 
-		badgeFrame = New("Frame", {
-			Size = UDim2.fromOffset(0, 16),
-			AutomaticSize = Enum.AutomaticSize.X,
-			BorderSizePixel = 0,
-			LayoutOrder = nextOrder(),
-			Parent = row,
-		})
-		-- set outside New so the repaint registry never claims this colour
-		badgeFrame.BackgroundColor3 = badgeColor
-		Corner(badgeFrame, 4)
-		Pad(badgeFrame, 0, 6, 0, 6)
-
-		badgeLabel = Label(badgeFrame, opts.Badge, Theme.TextBright, 11, Theme.FontMedium)
-		badgeLabel.TextColor3 = Color3.fromRGB(28, 24, 26)
-		badgeLabel.Size = UDim2.new(0, 0, 1, 0)
-		badgeLabel.AutomaticSize = Enum.AutomaticSize.X
+		return value
 	end
 
+	local fpsLabel  = field("gauge", "0", "fps")
 	separator()
-	local fpsLabel  = field("gauge", "0 fps")
-	separator()
-	local pingLabel = field("wifi", "0 ms")
+	local pingLabel = field("wifi", "0", "ms")
 	separator()
 	local timeLabel = field("clock", "00:00:00")
-	separator()
-	local nameLabel = field("user", player and player.Name or "player")
 
+	--------------------------------------------------------------
 	-- drag
+	--------------------------------------------------------------
+
 	do
 		local dragging, dragStart, startPos = false, nil, nil
 		local activeInput = nil
@@ -4804,11 +4875,16 @@ function Library:Watermark(opts)
 			if type(color) == "string" then
 				color = Library.BadgePresets[string.lower(color)]
 			end
-			if color then badgeFrame.BackgroundColor3 = color end
+			if type(color) == "table" and badgeGradient then
+				badgeGradient.Color = ColorSequence.new(color[1], color[2] or color[1])
+			end
 		end
 	end
 
-	-- refresh loop
+	--------------------------------------------------------------
+	-- refresh
+	--------------------------------------------------------------
+
 	local started = tick()
 	local frames = 0
 	Track(RunService.RenderStepped:Connect(function()
@@ -4819,14 +4895,14 @@ function Library:Watermark(opts)
 		while gui.Parent do
 			task.wait(1)
 			if gui.Enabled then
-				fpsLabel.Text = frames .. " fps"
+				fpsLabel.Text = tostring(frames)
 
 				local ping = 0
 				pcall(function()
 					ping = tonumber(string.split(
 						Stats.Network.ServerStatsItem["Data Ping"]:GetValueString(), " ")[1]) or 0
 				end)
-				pingLabel.Text = math.floor(ping) .. " ms"
+				pingLabel.Text = tostring(math.floor(ping))
 
 				local elapsed = math.floor(tick() - started)
 				timeLabel.Text = string.format("%02d:%02d:%02d",
