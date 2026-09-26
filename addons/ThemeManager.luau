@@ -1,4 +1,5 @@
-
+-- Facility addon | ThemeManager
+-- Presets de couleurs, edition par element, recoloration a chaud.
 
 return function(Library)
 	local HttpService = game:GetService("HttpService")
@@ -35,7 +36,6 @@ return function(Library)
 		{ "TextMarked", "text warning" },
 		{ "TextCode", "text success" },
 		{ "Danger", "text danger" },
-		{ "Shadow", "shadow" },
 	}
 
 	ThemeManager.Order = {
@@ -156,12 +156,6 @@ return function(Library)
 			Theme.TextCode = Color3.fromRGB(96, 200, 96)
 			Theme.Danger = Color3.fromRGB(226, 102, 102)
 		end
-
-		-- kept off the derived grey ramp so it can never collide with
-		-- another palette entry, which would break the repaint mapping
-		Theme.Shadow = preset.Light
-			and Color3.fromRGB(148, 150, 158)
-			or Color3.fromRGB(12, 10, 16)
 
 		self.Current = name
 		self:SetAccent(preset.Accent)
