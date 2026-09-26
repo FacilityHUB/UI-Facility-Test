@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -164,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-sectiontitle-6"
+Library.Version = "2026.09.09-watermark"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -4613,6 +4615,233 @@ function Library:ServerBrowser(opts)
 	return api
 end
 
+Library.BadgePresets = {
+	pro       = Color3.fromRGB(232, 185, 72),
+	premium   = Color3.fromRGB(232, 185, 72),
+	vip       = Color3.fromRGB(196, 118, 232),
+	free      = Color3.fromRGB(120, 124, 132),
+	beta      = Color3.fromRGB(96, 170, 232),
+	alpha     = Color3.fromRGB(226, 102, 102),
+	dev       = Color3.fromRGB(226, 102, 102),
+	owner     = Color3.fromRGB(232, 120, 170),
+	lifetime  = Color3.fromRGB(96, 200, 140),
+}
+
+function Library:Watermark(opts)
+	if self.WatermarkApi then return self.WatermarkApi end
+	opts = opts or {}
+
+	local Stats = game:GetService("Stats")
+	local player = Players.LocalPlayer
+
+	local gui = New("ScreenGui", {
+		Name = RandomName(),
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		AutoLocalize = false,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		DisplayOrder = MAX_DISPLAY_ORDER - 3,
+		Enabled = opts.Visible ~= false,
+	})
+	ParentGui(gui)
+
+	local bar = New("Frame", {
+		Size = UDim2.fromOffset(0, 30),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Position = opts.Position or UDim2.fromOffset(18, 18),
+		BackgroundColor3 = Theme.Window,
+		BorderSizePixel = 0,
+		Active = true,
+		Parent = gui,
+	})
+	Corner(bar, 8)
+	Stroke(bar, Theme.WindowBorder)
+	Pad(bar, 0, 12, 0, 12)
+
+	local row = New("Frame", {
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Parent = bar,
+	})
+	local rowList = List(row, 9, Enum.FillDirection.Horizontal)
+	rowList.VerticalAlignment = Enum.VerticalAlignment.Center
+	rowList.SortOrder = Enum.SortOrder.LayoutOrder
+
+	local order = 0
+	local function nextOrder()
+		order = order + 1
+		return order
+	end
+
+	local function separator()
+		local line = New("Frame", {
+			Size = UDim2.fromOffset(1, 14),
+			BackgroundColor3 = Theme.BorderSoft,
+			BorderSizePixel = 0,
+			LayoutOrder = nextOrder(),
+			Parent = row,
+		})
+		return line
+	end
+
+	local function field(iconName, text, color)
+		local holder = New("Frame", {
+			Size = UDim2.new(0, 0, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundTransparency = 1,
+			LayoutOrder = nextOrder(),
+			Parent = row,
+		})
+		local list = List(holder, 5, Enum.FillDirection.Horizontal)
+		list.VerticalAlignment = Enum.VerticalAlignment.Center
+
+		local icon = AttachIcon(holder, iconName, Theme.TextDim, 13)
+		if icon then icon.LayoutOrder = 1 end
+
+		local label = Label(holder, text, color or Theme.Text, Theme.TextSize)
+		label.Size = UDim2.new(0, 0, 1, 0)
+		label.AutomaticSize = Enum.AutomaticSize.X
+		label.LayoutOrder = 2
+
+		return label
+	end
+
+	-- title
+	local titleLabel = Label(row, opts.Title or "facility", Theme.TextBright, Theme.TextSize, Theme.FontMedium)
+	titleLabel.Size = UDim2.new(0, 0, 1, 0)
+	titleLabel.AutomaticSize = Enum.AutomaticSize.X
+	titleLabel.LayoutOrder = nextOrder()
+
+	-- badge
+	local badgeFrame, badgeLabel
+	if opts.Badge then
+		local badgeColor = opts.BadgeColor
+		if type(badgeColor) == "string" then
+			badgeColor = Library.BadgePresets[string.lower(badgeColor)]
+		end
+		badgeColor = badgeColor or Theme.Accent
+
+		badgeFrame = New("Frame", {
+			Size = UDim2.fromOffset(0, 16),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundColor3 = badgeColor,
+			BorderSizePixel = 0,
+			LayoutOrder = nextOrder(),
+			Parent = row,
+		})
+		Corner(badgeFrame, 4)
+		Pad(badgeFrame, 0, 6, 0, 6)
+
+		badgeLabel = Label(badgeFrame, opts.Badge, Color3.fromRGB(28, 24, 26), 11, Theme.FontMedium)
+		badgeLabel.Size = UDim2.new(0, 0, 1, 0)
+		badgeLabel.AutomaticSize = Enum.AutomaticSize.X
+	end
+
+	separator()
+	local fpsLabel  = field("gauge", "0 fps")
+	separator()
+	local pingLabel = field("wifi", "0 ms")
+	separator()
+	local timeLabel = field("clock", "00:00:00")
+	separator()
+	local nameLabel = field("user", player and player.Name or "player")
+
+	-- drag
+	do
+		local dragging, dragStart, startPos = false, nil, nil
+		local activeInput = nil
+		Track(bar.InputBegan:Connect(function(input)
+			if input.UserInputType ~= Enum.UserInputType.MouseButton1
+				and input.UserInputType ~= Enum.UserInputType.Touch then return end
+			if dragging then return end
+			dragging = true
+			activeInput = input
+			dragStart = input.Position
+			startPos = bar.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+					activeInput = nil
+				end
+			end)
+		end))
+		Track(UserInputService.InputChanged:Connect(function(input)
+			if not dragging then return end
+			if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+			if input.UserInputType ~= Enum.UserInputType.MouseMovement
+				and input.UserInputType ~= Enum.UserInputType.Touch then return end
+			local delta = input.Position - dragStart
+			bar.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end))
+	end
+
+	local api = {
+		Gui = gui,
+		Frame = bar,
+		Open = gui.Enabled,
+	}
+
+	function api:SetVisible(state)
+		self.Open = state and true or false
+		gui.Enabled = self.Open
+	end
+
+	function api:Toggle()
+		self:SetVisible(not self.Open)
+	end
+
+	function api:SetTitle(text)
+		titleLabel.Text = tostring(text or "")
+	end
+
+	function api:SetBadge(text, color)
+		if not badgeFrame then return end
+		badgeLabel.Text = tostring(text or "")
+		if color then
+			if type(color) == "string" then
+				color = Library.BadgePresets[string.lower(color)]
+			end
+			if color then badgeFrame.BackgroundColor3 = color end
+		end
+	end
+
+	-- refresh loop
+	local started = tick()
+	local frames = 0
+	Track(RunService.RenderStepped:Connect(function()
+		frames = frames + 1
+	end))
+
+	task.spawn(function()
+		while gui.Parent do
+			task.wait(1)
+			if gui.Enabled then
+				fpsLabel.Text = frames .. " fps"
+
+				local ping = 0
+				pcall(function()
+					ping = tonumber(string.split(
+						Stats.Network.ServerStatsItem["Data Ping"]:GetValueString(), " ")[1]) or 0
+				end)
+				pingLabel.Text = math.floor(ping) .. " ms"
+
+				local elapsed = math.floor(tick() - started)
+				timeLabel.Text = string.format("%02d:%02d:%02d",
+					math.floor(elapsed / 3600),
+					math.floor(elapsed % 3600 / 60),
+					elapsed % 60)
+			end
+			frames = 0
+		end
+	end)
+
+	self.WatermarkApi = api
+	return api
+end
+
 function Library:ToggleUI(state)
 	if state == nil then state = not self.Open end
 	self.Open = state
@@ -4740,6 +4969,7 @@ function Library:Destroy()
 	end
 	if self.CursorGui then self.CursorGui:Destroy() self.CursorGui = nil self.CursorHolder = nil end
 	if self.ServerBrowserApi then pcall(function() self.ServerBrowserApi.Gui:Destroy() end) self.ServerBrowserApi = nil end
+	if self.WatermarkApi then pcall(function() self.WatermarkApi.Gui:Destroy() end) self.WatermarkApi = nil end
 	if self.HotkeyGui then self.HotkeyGui:Destroy() self.HotkeyGui = nil self.HotkeyPanel = nil end
 	for index = #self.Panels, 1, -1 do
 		pcall(function() self.Panels[index].Gui:Destroy() end)
