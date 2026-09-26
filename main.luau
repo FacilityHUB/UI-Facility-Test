@@ -140,6 +140,9 @@ Library.AddonPaths = {
 }
 Library.Addons = {}
 Library.Painted = Painted
+-- "inline" : titre dans la carte (defaut)
+-- "border" : titre pose sur la bordure, facon fieldset
+Library.SectionTitleStyle = "inline"
 Library.RepaintHooks = {}
 
 function Library:SafeCallback(label, callback, ...)
@@ -161,7 +164,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.08-onjoin"
+Library.Version = "2026.09.09-sectiontitle"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2105,6 +2108,8 @@ local Section = setmetatable({}, { __index = Elements })
 Section.__index = Section
 
 local function CreateSection(window, parent, title, order)
+	local borderTitle = Library.SectionTitleStyle == "border"
+
 	local frame = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -2115,24 +2120,61 @@ local function CreateSection(window, parent, title, order)
 	})
 	Corner(frame, 7)
 	Stroke(frame, Theme.SectionBorder)
-	Pad(frame, 12, 14, 14, 14)
+	Pad(frame, borderTitle and 18 or 12, 14, 14, 14)
 	local frameList = List(frame, 0)
 
-	local header = New("TextButton", {
-		Size = UDim2.new(1, 0, 0, 22),
-		BackgroundTransparency = 1,
-		AutoButtonColor = false,
-		Text = "",
-		Parent = frame,
-	})
-	local htitle = Label(header, title, Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
-	htitle.Size = UDim2.new(1, -16, 1, 0)
-	local hchev = Chevron(header, Theme.TextDim)
-	hchev.AnchorPoint = Vector2.new(0, 0.5)
-	hchev.Position = UDim2.new(0, htitle.TextBounds.X + 6, 0.5, 1)
-	Track(htitle:GetPropertyChangedSignal("TextBounds"):Connect(function()
+	local header, htitle, hchev
+
+	if borderTitle then
+		-- the title sits on the stroke, its own background hides the line
+		header = New("TextButton", {
+			Size = UDim2.fromOffset(0, 18),
+			AutomaticSize = Enum.AutomaticSize.X,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromOffset(12, 0),
+			BackgroundColor3 = Theme.Window,
+			AutoButtonColor = false,
+			Text = "",
+			ZIndex = 3,
+			Parent = frame,
+		})
+		Pad(header, 0, 6, 0, 6)
+
+		local row = New("Frame", {
+			Size = UDim2.new(0, 0, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundTransparency = 1,
+			ZIndex = 3,
+			Parent = header,
+		})
+		local rowList = List(row, 5, Enum.FillDirection.Horizontal)
+		rowList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+		htitle = Label(row, title, Theme.TextBright, Theme.TextSize, Theme.FontMedium)
+		htitle.Size = UDim2.new(0, 0, 1, 0)
+		htitle.AutomaticSize = Enum.AutomaticSize.X
+		htitle.ZIndex = 3
+
+		hchev = Chevron(row, Theme.TextDim)
+		hchev.LayoutOrder = 2
+		hchev.ZIndex = 3
+	else
+		header = New("TextButton", {
+			Size = UDim2.new(1, 0, 0, 22),
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Text = "",
+			Parent = frame,
+		})
+		htitle = Label(header, title, Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
+		htitle.Size = UDim2.new(1, -16, 1, 0)
+		hchev = Chevron(header, Theme.TextDim)
+		hchev.AnchorPoint = Vector2.new(0, 0.5)
 		hchev.Position = UDim2.new(0, htitle.TextBounds.X + 6, 0.5, 1)
-	end))
+		Track(htitle:GetPropertyChangedSignal("TextBounds"):Connect(function()
+			hchev.Position = UDim2.new(0, htitle.TextBounds.X + 6, 0.5, 1)
+		end))
+	end
 
 	local body = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
@@ -2142,6 +2184,11 @@ local function CreateSection(window, parent, title, order)
 		LayoutOrder = 2,
 		Parent = frame,
 	})
+	if borderTitle then
+		-- the header is absolutely positioned, reclaim the space it left
+		frameList.Padding = UDim.new(0, 0)
+		body.Position = UDim2.fromOffset(0, 0)
+	end
 	local content = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
