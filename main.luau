@@ -4786,3 +4786,60 @@ function FileSystem:Read(path)
 			local read, data = pcall(readfile, path)
 			if read then return data end
 		end
+	end
+	return self.Memory[path]
+end
+
+function FileSystem:Delete(path)
+	if self.Native and typeof(delfile) == "function" then pcall(delfile, path) end
+	self.Memory[path] = nil
+end
+
+function FileSystem:List(folder)
+	local names, seen = {}, {}
+	if self.Native and typeof(listfiles) == "function" then
+		local ok, files = pcall(listfiles, folder)
+		if ok and files then
+			for _, full in ipairs(files) do
+				local name = string.match(full, "[^/\\]+$")
+				if name and not seen[name] then
+					seen[name] = true
+					table.insert(names, name)
+				end
+			end
+		end
+	end
+	for path in pairs(self.Memory) do
+		if string.sub(path, 1, #folder + 1) == folder .. "/" then
+			local name = string.match(path, "[^/\\]+$")
+			if name and not seen[name] then
+				seen[name] = true
+				table.insert(names, name)
+			end
+		end
+	end
+	table.sort(names)
+	return names
+end
+
+function Library:BuildFolders(folder)
+	local path = ""
+	for _, part in ipairs(string.split(folder, "/")) do
+		path = path == "" and part or (path .. "/" .. part)
+		FileSystem:MakeFolder(path)
+	end
+	FileSystem:MakeFolder(folder .. "/configs")
+	FileSystem:MakeFolder(folder .. "/settings")
+	return folder
+end
+
+Library.FileSystem = FileSystem
+
+if getgenv then
+	pcall(function() getgenv().Facility = Library end)
+end
+Library.SaveManager = Library:LoadAddon("SaveManager")
+Library.InterfaceManager = Library:LoadAddon("InterfaceManager")
+Library.ThemeManager = Library:LoadAddon("ThemeManager")
+
+return Library
