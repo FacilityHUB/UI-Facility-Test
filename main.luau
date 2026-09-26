@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -164,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-watermark-4"
+Library.Version = "2026.09.09-repaintfix"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -233,10 +235,16 @@ function Library:Repaint()
 		end)
 		if not ok then table.remove(Painted, i) end
 	end
-	self:RefreshHotkeys()
+	-- a throw here used to abort the whole repaint, leaving every hook below
+	-- unrun, so stateful colours kept their old value until a restart
+	pcall(function() self:RefreshHotkeys() end)
+
 	for i = #self.RepaintHooks, 1, -1 do
-		local ok = pcall(self.RepaintHooks[i])
-		if not ok then table.remove(self.RepaintHooks, i) end
+		local ok, err = pcall(self.RepaintHooks[i])
+		if not ok then
+			warn("Facility | repaint hook failed: " .. tostring(err))
+			table.remove(self.RepaintHooks, i)
+		end
 	end
 end
 
