@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -164,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-sectiontitle-3"
+Library.Version = "2026.09.09-sectiontitle-4"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2137,7 +2139,7 @@ local function CreateSection(window, parent, title, order)
 	if borderTitle then
 		-- the title sits on the stroke, its own background hides the line
 		header = New("TextButton", {
-			Size = UDim2.fromOffset(0, 18),
+			Size = UDim2.fromOffset(0, 16),
 			AutomaticSize = Enum.AutomaticSize.X,
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.fromOffset(12, 0),
@@ -2275,7 +2277,7 @@ function Tab:Block()
 			LayoutOrder = i,
 			Parent = block,
 		})
-		List(frame, 14)
+		List(frame, Library.SectionTitleStyle == "border" and 22 or 14)
 		self.Columns[i] = setmetatable({ Window = self.Window, Frame = frame, Order = 0 }, Column)
 	end
 
@@ -2392,9 +2394,9 @@ function Window:Tab(name, icon)
 		Visible = false,
 		Parent = self.Body,
 	})
-	local pageList = List(page, 14)
+	local pageList = List(page, Library.SectionTitleStyle == "border" and 22 or 14)
 	pageList.SortOrder = Enum.SortOrder.LayoutOrder
-	Pad(page, 2, 8, 2, 8)
+	Pad(page, Library.SectionTitleStyle == "border" and 12 or 2, 8, 2, 8)
 
 	local tab = setmetatable({
 		Window = self,
