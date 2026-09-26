@@ -28,8 +28,6 @@ return function(Library)
 		self.Settings = self.Settings or { MenuKey = "RightShift", Scale = 100, Hotkeys = false }
 
 		local section = tab:Section("interface", column or 1)
-		local window = self:GetWindow()
-
 		local menuKey = section:Keybind({
 			Text = "menu key",
 			Flag = "interface_menu_key",
@@ -54,7 +52,7 @@ return function(Library)
 			end,
 		})
 
-		local hotkeys = section:Toggle({
+local hotkeys = section:Toggle({
 			Text = "hotkeys panel",
 			Flag = "interface_hotkeys",
 			Hint = "shows active keybinds on screen",
