@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -92,7 +90,14 @@ local MAX_DISPLAY_ORDER = 2^53
 local EASE      = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local EASE_FAST = TweenInfo.new(0.10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
+-- Registry of themed instances, keyed by instance.
+-- Each entry maps a property name to a theme key, so a repaint is a plain
+-- lookup instead of a colour comparison. Declaring a tag is explicit:
+--   New("Frame", { ThemeTag = { BackgroundColor3 = "Section" } })
+-- and a state change reassigns the tag instead of writing a raw colour:
+--   Library:Tag(box, { BackgroundColor3 = state and "Accent" or "Field" })
 local Painted = {}
+local PaintedCount = 0
 local ThemeAlpha = {}
 local ALPHA_PROPS = {
 	BackgroundColor3 = "BackgroundTransparency",
@@ -142,6 +147,7 @@ Library.AddonPaths = {
 }
 Library.Addons = {}
 Library.Painted = Painted
+Library.PaintedCount = function() return PaintedCount end
 -- "inline" : titre dans la carte (defaut)
 -- "border" : titre pose sur la bordure, facon fieldset
 Library.SectionTitleStyle = "inline"
@@ -217,24 +223,52 @@ function Library:SetColor(key, color, alpha)
 	return true
 end
 
+function Library:Tag(instance, props)
+	if typeof(instance) ~= "Instance" then return instance end
+	return TagInstance(instance, props)
+end
+
+function Library:Untag(instance)
+	if Painted[instance] then
+		Painted[instance] = nil
+		PaintedCount = PaintedCount - 1
+	end
+end
+
 function Library:Repaint()
-	if #Painted == 0 then
+	if PaintedCount == 0 then
 		warn("Facility | repaint registry is empty, main.luau is probably outdated")
 	end
 	IndexTheme()
-	for i = #Painted, 1, -1 do
-		local entry = Painted[i]
+
+	local dead = {}
+	for instance, entry in pairs(Painted) do
 		local ok = pcall(function()
-			local instance, property, key = entry[1], entry[2], entry[3]
-			instance[property] = Theme[key]
-			local alpha = ThemeAlpha[key]
-			local transparency = ALPHA_PROPS[property]
-			if alpha and transparency and instance[transparency] < 1 then
-				instance[transparency] = 1 - alpha
+			-- an instance removed from the tree is dropped on the next pass
+			if not instance.Parent and not instance:IsA("ScreenGui") then
+				table.insert(dead, instance)
+				return
+			end
+			for property, key in pairs(entry) do
+				local color = Theme[key]
+				if color ~= nil then
+					instance[property] = color
+					local alpha = ThemeAlpha[key]
+					local transparency = ALPHA_PROPS[property]
+					if alpha and transparency and instance[transparency] < 1 then
+						instance[transparency] = 1 - alpha
+					end
+				end
 			end
 		end)
-		if not ok then table.remove(Painted, i) end
+		if not ok then table.insert(dead, instance) end
 	end
+
+	for _, instance in ipairs(dead) do
+		Painted[instance] = nil
+		PaintedCount = PaintedCount - 1
+	end
+
 	self:RefreshHotkeys()
 	for i = #self.RepaintHooks, 1, -1 do
 		local ok = pcall(self.RepaintHooks[i])
@@ -299,20 +333,50 @@ local function Track(conn)
 	return conn
 end
 
-local function New(class, props, children)
-	local inst = Instance.new(class)
-	local parent = nil
-	for k, v in pairs(props or {}) do
-		if k == "Parent" then
-			parent = v
+local function TagInstance(inst, props)
+	local entry = Painted[inst]
+	if not entry then
+		entry = {}
+		Painted[inst] = entry
+		PaintedCount = PaintedCount + 1
+	end
+	for property, key in pairs(props) do
+		if key == false then
+			entry[property] = nil
 		else
-			inst[k] = v
-			if typeof(v) == "Color3" then
-				local key = ThemeIndex[tostring(v)]
-				if key then table.insert(Painted, { inst, k, key }) end
+			entry[property] = key
+			local color = Theme[key]
+			if color ~= nil then
+				pcall(function() inst[property] = color end)
 			end
 		end
 	end
+	return inst
+end
+
+local function New(class, props, children)
+	local inst = Instance.new(class)
+	local parent = nil
+	local tag = nil
+
+	for k, v in pairs(props or {}) do
+		if k == "Parent" then
+			parent = v
+		elseif k == "ThemeTag" then
+			tag = v
+		else
+			inst[k] = v
+			-- fallback for call sites that pass Theme.X directly
+			if typeof(v) == "Color3" then
+				local key = ThemeIndex[tostring(v)]
+				if key then TagInstance(inst, { [k] = key }) end
+			end
+		end
+	end
+
+	-- an explicit tag always wins over the detected one
+	if tag then TagInstance(inst, tag) end
+
 	for _, child in ipairs(children or {}) do child.Parent = inst end
 	if parent then inst.Parent = parent end
 	return inst
@@ -975,6 +1039,8 @@ function Elements:Toggle(opts)
 	local function render(animate)
 		local info = animate and EASE_FAST or TweenInfo.new(0)
 		Tween(box, { BackgroundTransparency = state and 0 or 1 }, info)
+		-- the tag follows the state, so the stroke keeps tracking the theme
+		Library:Tag(boxStroke, { Color = state and "Accent" or "Border" })
 		Tween(boxStroke, { Color = state and Theme.Accent or Theme.Border }, info)
 	end
 
@@ -1156,7 +1222,6 @@ function Elements:Toggle(opts)
 	end
 
 	Disableable(api, { text, boxStroke }, opts)
-	Library:OnRepaint(function() render(false) end)
 
 	if flag then
 		Library.Flags[flag] = state
@@ -1276,6 +1341,7 @@ function Elements:Dropdown(opts)
 		value.Text = display()
 		for v, row in pairs(rows) do
 			local picked = isPicked(v)
+			Library:Tag(row.Text, { TextColor3 = picked and "AccentSoft" or "Text" })
 			Tween(row.Text, { TextColor3 = picked and Theme.AccentSoft or Theme.Text }, EASE_FAST)
 		end
 		if flag then
@@ -1349,10 +1415,12 @@ function Elements:Dropdown(opts)
 	panel.OnOpen = function()
 		searchBox.Text = ""
 		applyFilter()
+		Library:Tag(bStroke, { Color = "Accent" })
 		Tween(bStroke, { Color = Theme.Accent }, EASE_FAST)
 		Tween(chev, { Rotation = 180 }, EASE_FAST)
 	end
 	panel.OnClose = function()
+		Library:Tag(bStroke, { Color = "Border" })
 		Tween(bStroke, { Color = Theme.Border }, EASE_FAST)
 		Tween(chev, { Rotation = 0 }, EASE_FAST)
 	end
@@ -1384,17 +1452,7 @@ function Elements:Dropdown(opts)
 	refresh()
 	Disableable(api, { value, caption }, opts)
 
-	Library:OnRepaint(function()
-		refresh()
-		local open = false
-		for _, panel_ in ipairs(self.Window.FloatStack) do
-			if panel_ == panel then open = true break end
-		end
-		bStroke.Color = open and Theme.Accent or Theme.Border
-		for _, bar in ipairs(chev:GetChildren()) do
-			if bar:IsA("Frame") then bar.BackgroundColor3 = Theme.TextDim end
-		end
-	end)
+	Library:OnRepaint(refresh)
 
 	if flag then
 		Library:Register(flag, {
@@ -2464,7 +2522,14 @@ function Window:Tab(name, icon)
 
 	function tab:SetActive(active, animate)
 		local info = animate and EASE_FAST or TweenInfo.new(0)
-		local color = active and Theme.Accent or Theme.TextDim
+		local key = active and "Accent" or "TextDim"
+		local color = Theme[key]
+
+		-- retag so the active tab keeps its colour across theme changes
+		Library:Tag(label, { TextColor3 = key })
+		if icon then Library:Tag(icon, { ImageColor3 = key }) end
+		if activeBar then Library:Tag(activeBar, { BackgroundColor3 = "Accent" }) end
+
 		Tween(label, { TextColor3 = color }, info)
 		if icon then Tween(icon, { ImageColor3 = color }, info) end
 		if side then
@@ -2476,10 +2541,6 @@ function Window:Tab(name, icon)
 	end
 
 	table.insert(self.Tabs, tab)
-
-	Library:OnRepaint(function()
-		tab:SetActive(self.ActiveTab == tab, false)
-	end)
 
 	Track(button.Activated:Connect(function()
 		self:SetTab(tab)
