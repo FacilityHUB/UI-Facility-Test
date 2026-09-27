@@ -1,4 +1,3 @@
--- 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -194,7 +193,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.10-themetags"
+Library.Version = "2026.09.10-scrimfix"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -275,9 +274,10 @@ function Library:Repaint()
 				local color = Theme[key]
 				if color ~= nil then
 					instance[property] = color
-					local alpha = ThemeAlpha[key]
+					local alpha = tonumber(ThemeAlpha[key])
 					local transparency = ALPHA_PROPS[property]
-					if alpha and transparency and instance[transparency] < 1 then
+					if alpha and alpha < 1 and alpha > 0 and transparency
+						and instance[transparency] < 1 then
 						instance[transparency] = 1 - alpha
 					end
 				end
@@ -1708,6 +1708,7 @@ function BuildColorPicker(owner, swatch, opts)
 	local shade = New("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		ThemeTag = { BackgroundColor3 = false },
 		BorderSizePixel = 0,
 		ZIndex = z,
 		Parent = sv,
@@ -2758,6 +2759,7 @@ function Window:Modal(opts)
 	local scrim = New("TextButton", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		ThemeTag = { BackgroundColor3 = false },
 		BackgroundTransparency = 1,
 		AutoButtonColor = false,
 		Text = "",
