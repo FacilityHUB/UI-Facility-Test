@@ -1,3 +1,4 @@
+-- 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -193,7 +194,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.09-sectiontitle-6"
+Library.Version = "2026.09.10-themetags"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -631,6 +632,7 @@ function Elements:Divider()
 		BackgroundColor3 = Theme.BorderSoft,
 		BorderSizePixel = 0,
 		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
 	return d
 end
@@ -707,6 +709,7 @@ function Elements:Paragraph(opts)
 		BackgroundColor3 = Theme.Group,
 		BorderSizePixel = 0,
 		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "Group" },
 	})
 	Corner(card, 5)
 	local stroke = Stroke(card, styled and accent or Theme.GroupBorder, 1, styled and 0.55 or 0)
@@ -770,6 +773,7 @@ local function MakeButton(parent, opts, size, order)
 		BorderSizePixel = 0,
 		LayoutOrder = order,
 		Parent = parent,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(btn, 5)
 	Stroke(btn, Theme.Border)
@@ -862,6 +866,7 @@ function Elements:Input(opts)
 		ClipsDescendants = true,
 		LayoutOrder = 2,
 		Parent = block,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(field, 5)
 	local fStroke = Stroke(field, Theme.Border)
@@ -878,6 +883,7 @@ function Elements:Input(opts)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ClearTextOnFocus = false,
 		Parent = field,
+		ThemeTag = { PlaceholderColor3 = "TextDim", TextColor3 = "TextBright" },
 	})
 
 	local api = Disableable({ Instance = block, Box = box }, { box }, opts)
@@ -942,6 +948,7 @@ local function MakeHint(owner, parent, text, order)
 			ZIndex = 340,
 			BorderSizePixel = 0,
 			Parent = layer,
+			ThemeTag = { BackgroundColor3 = "PopupBg", TextColor3 = "TextBright" },
 		})
 		Pad(tip, 6, 9)
 		Corner(tip, 4)
@@ -988,6 +995,7 @@ function Elements:Toggle(opts)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = row,
+		ThemeTag = { BackgroundColor3 = "Accent" },
 	})
 	Corner(box, 3)
 	local boxStroke = Stroke(box, Theme.Border)
@@ -1081,6 +1089,7 @@ function Elements:Toggle(opts)
 			BorderSizePixel = 0,
 			LayoutOrder = 20,
 			Parent = right,
+			ThemeTag = { BackgroundColor3 = "Field" },
 		})
 		Corner(pill, 4)
 		Stroke(pill, Theme.Border)
@@ -1205,6 +1214,7 @@ function Elements:Toggle(opts)
 			ImageColor3 = Theme.TextDim,
 			LayoutOrder = 30,
 			Parent = right,
+			ThemeTag = { ImageColor3 = "TextDim" },
 		})
 		local panel = owner.Window:CreateFloating(190, false, owner.Float)
 		local content = NewContainer(owner.Window, panel.Content, panel)
@@ -1265,6 +1275,7 @@ function Elements:Dropdown(opts)
 		BorderSizePixel = 0,
 		LayoutOrder = 2,
 		Parent = block,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(button, 5)
 	local bStroke = Stroke(button, Theme.Border)
@@ -1286,6 +1297,7 @@ function Elements:Dropdown(opts)
 		Visible = false,
 		ZIndex = panel.Frame.ZIndex,
 		Parent = panel.Content,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(searchField, 4)
 	Stroke(searchField, Theme.Border)
@@ -1303,6 +1315,7 @@ function Elements:Dropdown(opts)
 		ClearTextOnFocus = false,
 		ZIndex = panel.Frame.ZIndex,
 		Parent = searchField,
+		ThemeTag = { PlaceholderColor3 = "TextDim", TextColor3 = "TextBright" },
 	})
 	local scroller = New("ScrollingFrame", {
 		Size = UDim2.new(1, 0, 0, 24),
@@ -1315,6 +1328,7 @@ function Elements:Dropdown(opts)
 		LayoutOrder = 2,
 		ZIndex = panel.Frame.ZIndex,
 		Parent = panel.Content,
+		ThemeTag = { ScrollBarImageColor3 = "AccentDim" },
 	})
 	List(scroller, 2)
 
@@ -1380,6 +1394,7 @@ function Elements:Dropdown(opts)
 				LayoutOrder = i,
 				ZIndex = panel.Frame.ZIndex,
 				Parent = scroller,
+				ThemeTag = { BackgroundColor3 = "FieldHover" },
 			})
 			Corner(item, 4)
 			local il = Label(item, tostring(v), Theme.Text)
@@ -1510,6 +1525,7 @@ function Elements:Slider(opts)
 		ClearTextOnFocus = true,
 		LayoutOrder = 2,
 		Parent = head,
+		ThemeTag = { TextColor3 = "TextDim", PlaceholderColor3 = "TextDim" },
 	})
 
 	local valueLabel = valueBox
@@ -1522,6 +1538,7 @@ function Elements:Slider(opts)
 		Text = "",
 		BorderSizePixel = 0,
 		Parent = block,
+		ThemeTag = { BackgroundColor3 = "Track" },
 	})
 	Corner(track, 2)
 	local fill = New("Frame", {
@@ -1529,6 +1546,7 @@ function Elements:Slider(opts)
 		BackgroundColor3 = Theme.Accent,
 		BorderSizePixel = 0,
 		Parent = track,
+		ThemeTag = { BackgroundColor3 = "Accent" },
 	})
 	Corner(fill, 2)
 	local knob = New("Frame", {
@@ -1538,6 +1556,7 @@ function Elements:Slider(opts)
 		BackgroundColor3 = Theme.Accent,
 		BorderSizePixel = 0,
 		Parent = track,
+		ThemeTag = { BackgroundColor3 = "Accent" },
 	})
 	Corner(knob, 5)
 
@@ -1745,6 +1764,7 @@ function BuildColorPicker(owner, swatch, opts)
 			LayoutOrder = 2,
 			ZIndex = z,
 			Parent = panel.Content,
+			ThemeTag = { BackgroundColor3 = "Track" },
 		})
 		Corner(track, 3)
 		alphaBar = New("TextButton", {
@@ -1785,6 +1805,7 @@ function BuildColorPicker(owner, swatch, opts)
 		LayoutOrder = 3,
 		ZIndex = z,
 		Parent = panel.Content,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(hexField, 4)
 	local hexStroke = Stroke(hexField, Theme.Border)
@@ -1800,6 +1821,7 @@ function BuildColorPicker(owner, swatch, opts)
 		ClearTextOnFocus = false,
 		ZIndex = z,
 		Parent = hexField,
+		ThemeTag = { TextColor3 = "TextBright" },
 	})
 
 	local api = { Instance = swatch, Swatch = swatch, Color = base, Alpha = alpha }
@@ -1963,6 +1985,7 @@ function Elements:Keybind(opts)
 		Text = "",
 		BorderSizePixel = 0,
 		Parent = row,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(pill, 4)
 	Stroke(pill, Theme.Border)
@@ -2108,6 +2131,7 @@ function Elements:Search(opts)
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
 		Parent = row,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	Corner(field, 5)
 	local fStroke = Stroke(field, Theme.Border)
@@ -2124,6 +2148,7 @@ function Elements:Search(opts)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ClearTextOnFocus = false,
 		Parent = field,
+		ThemeTag = { PlaceholderColor3 = "TextDim", TextColor3 = "TextBright" },
 	})
 	local side = Label(row, opts.Label or "search", Theme.TextDim)
 	side.AnchorPoint = Vector2.new(1, 0.5)
@@ -2177,6 +2202,7 @@ local function CreateSection(window, parent, title, order)
 		BorderSizePixel = 0,
 		LayoutOrder = order,
 		Parent = parent,
+		ThemeTag = { BackgroundColor3 = "Section" },
 	})
 	Corner(frame, 7)
 	Stroke(frame, Theme.SectionBorder)
@@ -2219,6 +2245,7 @@ local function CreateSection(window, parent, title, order)
 			BorderSizePixel = 0,
 			ZIndex = 2,
 			Parent = header,
+			ThemeTag = { BackgroundColor3 = "Window" },
 		})
 
 		local row = New("Frame", {
@@ -2390,6 +2417,7 @@ function Window:CreateFloating(width, matchAnchor, parent)
 		Active = true,
 		ZIndex = z,
 		Parent = self.Overlay,
+		ThemeTag = { BackgroundColor3 = "PopupBg" },
 	})
 	Corner(frame, 5)
 	Stroke(frame, matchAnchor and Theme.Accent or Theme.PopupBorder)
@@ -2463,6 +2491,7 @@ function Window:Tab(name, icon)
 		VerticalScrollBarInset = Enum.ScrollBarInset.None,
 		Visible = false,
 		Parent = self.Body,
+		ThemeTag = { ScrollBarImageColor3 = "AccentDim" },
 	})
 	local pageList = List(page, Library.SectionTitleStyle == "border" and 22 or 14)
 	pageList.SortOrder = Enum.SortOrder.LayoutOrder
@@ -2487,6 +2516,7 @@ function Window:Tab(name, icon)
 		Text = "",
 		LayoutOrder = self:NextTabOrder(),
 		Parent = self.TabBar,
+		ThemeTag = { BackgroundColor3 = "Field" },
 	})
 	if side then
 		Corner(button, 5)
@@ -2500,6 +2530,7 @@ function Window:Tab(name, icon)
 			Name = "ActiveBar",
 			ZIndex = 2,
 			Parent = button,
+			ThemeTag = { BackgroundColor3 = "Accent" },
 		})
 		Corner(button:FindFirstChild("ActiveBar") or button, 2)
 	end
@@ -2601,6 +2632,7 @@ function Window:TabDivider(opts)
 		BackgroundColor3 = Theme.BorderSoft,
 		BorderSizePixel = 0,
 		Parent = holder,
+		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
 
 	if opts.Text then
@@ -2646,6 +2678,7 @@ function Window:Action(text, callback)
 		TextSize = Theme.TextSize,
 		Font = Theme.FontMedium,
 		Parent = self.Footer,
+		ThemeTag = { TextColor3 = "Accent" },
 	})
 	Track(btn.MouseEnter:Connect(function()
 		Tween(btn, { TextColor3 = Theme.AccentSoft }, EASE_FAST)
@@ -2687,6 +2720,7 @@ function Window:IconAction(icon, callback, order)
 		ImageColor3 = Theme.TextDim,
 		LayoutOrder = order or 1,
 		Parent = self.FooterLeft,
+		ThemeTag = { ImageColor3 = "TextDim" },
 	})
 
 	local resolved = ResolveIcon(icon)
@@ -2743,6 +2777,7 @@ function Window:Modal(opts)
 		Active = true,
 		ZIndex = 210,
 		Parent = root,
+		ThemeTag = { BackgroundColor3 = "Window" },
 	})
 	Corner(card, 10)
 	Stroke(card, Theme.WindowBorder)
@@ -2780,6 +2815,7 @@ function Window:Modal(opts)
 			BorderSizePixel = 0,
 			ZIndex = 210,
 			Parent = close,
+			ThemeTag = { BackgroundColor3 = "TextDim" },
 		})
 		Corner(bar, 1)
 		closeBars[i] = bar
@@ -2792,6 +2828,7 @@ function Window:Modal(opts)
 		BorderSizePixel = 0,
 		ZIndex = 210,
 		Parent = card,
+		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
 
 	local scroller = New("ScrollingFrame", {
@@ -2806,6 +2843,7 @@ function Window:Modal(opts)
 		VerticalScrollBarInset = Enum.ScrollBarInset.None,
 		ZIndex = 210,
 		Parent = card,
+		ThemeTag = { ScrollBarImageColor3 = "AccentDim" },
 	})
 	List(scroller, 9)
 	Pad(scroller, 4, 10, 8, 6)
@@ -3092,6 +3130,7 @@ function Library:Window(opts)
 				BorderSizePixel = 0,
 				Active = true,
 				Parent = gui,
+				ThemeTag = { BackgroundColor3 = "Window" },
 			})
 			Corner(card, 9)
 			Stroke(card, Theme.WindowBorder)
@@ -3143,6 +3182,7 @@ function Library:Window(opts)
 				Font = Theme.Font,
 				TextSize = 12,
 				Parent = card,
+				ThemeTag = { TextColor3 = "TextDim" },
 			})
 
 			-- vertical divider
@@ -3153,6 +3193,7 @@ function Library:Window(opts)
 				BackgroundColor3 = Theme.BorderSoft,
 				BorderSizePixel = 0,
 				Parent = card,
+				ThemeTag = { BackgroundColor3 = "BorderSoft" },
 			})
 
 			-- input
@@ -3163,6 +3204,7 @@ function Library:Window(opts)
 				BorderSizePixel = 0,
 				ClipsDescendants = true,
 				Parent = card,
+				ThemeTag = { BackgroundColor3 = "Field" },
 			})
 			Corner(field, 6)
 			Stroke(field, Theme.Border)
@@ -3181,6 +3223,7 @@ function Library:Window(opts)
 				Text = "",
 				ClearTextOnFocus = false,
 				Parent = field,
+				ThemeTag = { PlaceholderColor3 = "TextDim", TextColor3 = "Text" },
 			})
 
 			-- validate button
@@ -3190,6 +3233,7 @@ function Library:Window(opts)
 				BackgroundColor3 = Theme.Accent,
 				BorderSizePixel = 0,
 				Parent = card,
+				ThemeTag = { BackgroundColor3 = "Accent" },
 			})
 			Corner(validateFrame, 6)
 
@@ -3219,6 +3263,7 @@ function Library:Window(opts)
 					BackgroundColor3 = Theme.Accent,
 					BorderSizePixel = 0,
 					Parent = card,
+					ThemeTag = { BackgroundColor3 = "Accent" },
 				})
 				Corner(gkFrame, 6)
 				local gkBtn = New("TextButton", {
@@ -3244,6 +3289,7 @@ function Library:Window(opts)
 					BackgroundColor3 = Theme.Field,
 					BorderSizePixel = 0,
 					Parent = card,
+					ThemeTag = { BackgroundColor3 = "Field" },
 				})
 				Corner(dcFrame, 6)
 				Stroke(dcFrame, Theme.Border)
@@ -3256,6 +3302,7 @@ function Library:Window(opts)
 					TextSize = Theme.TextSize,
 					Font = Theme.FontMedium,
 					Parent = dcFrame,
+					ThemeTag = { TextColor3 = "TextBright" },
 				})
 				Track(dcBtn.Activated:Connect(function()
 					pcall(function()
@@ -3364,6 +3411,7 @@ function Library:Window(opts)
 		BackgroundTransparency = Theme.WindowAlpha,
 		BorderSizePixel = 0,
 		Parent = gui,
+		ThemeTag = { BackgroundColor3 = "Window" },
 	})
 	Corner(main, 10)
 	Stroke(main, Theme.WindowBorder)
@@ -3374,6 +3422,7 @@ function Library:Window(opts)
 		BackgroundColor3 = Theme.TopBar,
 		BorderSizePixel = 0,
 		Parent = main,
+		ThemeTag = { BackgroundColor3 = "TopBar" },
 	})
 	Corner(topBar, 10)
 	New("Frame", {
@@ -3382,6 +3431,7 @@ function Library:Window(opts)
 		BackgroundColor3 = Theme.TopBar,
 		BorderSizePixel = 0,
 		Parent = topBar,
+		ThemeTag = { BackgroundColor3 = "TopBar" },
 	})
 	local title = New("Frame", {
 		Size = UDim2.new(0, 0, 1, 0),
@@ -3408,6 +3458,7 @@ function Library:Window(opts)
 		BackgroundColor3 = Theme.Border,
 		BorderSizePixel = 0,
 		Parent = topBar,
+		ThemeTag = { BackgroundColor3 = "Border" },
 	})
 
 	if opts.SectionTitleStyle == "border" or opts.SectionTitle == "border" then
@@ -3478,6 +3529,7 @@ function Library:Window(opts)
 		BackgroundColor3 = Theme.BorderSoft,
 		BorderSizePixel = 0,
 		Parent = main,
+		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
 
 	local shellLeft = tabStyle == "side" and (14 + tabWidth + 10) or 14
@@ -3507,6 +3559,7 @@ function Library:Window(opts)
 			BackgroundColor3 = Theme.BorderSoft,
 			BorderSizePixel = 0,
 			Parent = main,
+			ThemeTag = { BackgroundColor3 = "BorderSoft" },
 		})
 		footer = New("Frame", {
 			Size = UDim2.new(1, -46, 0, footerHeight - 1),
@@ -3642,6 +3695,7 @@ function Library:Window(opts)
 			BorderSizePixel = 0,
 			ZIndex = 130,
 			Parent = grip,
+			ThemeTag = { BackgroundColor3 = "Border" },
 		})
 		Corner(bar, 1)
 		gripBars[i] = bar
@@ -3758,6 +3812,7 @@ function Library:Notify(opts, text, duration)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = self.NotifyHolder,
+		ThemeTag = { BackgroundColor3 = "Section" },
 	})
 	Corner(card, 6)
 	local cStroke = Stroke(card, Theme.SectionBorder, 1, 1)
@@ -3777,6 +3832,7 @@ function Library:Notify(opts, text, duration)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = card,
+		ThemeTag = { BackgroundColor3 = "Section" },
 	})
 	local inner = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
@@ -3894,6 +3950,7 @@ function Library:Panel(opts)
 		BorderSizePixel = 0,
 		Active = true,
 		Parent = root,
+		ThemeTag = { BackgroundColor3 = "Section" },
 	})
 	Corner(frame, 8)
 	Stroke(frame, Theme.SectionBorder)
@@ -3946,6 +4003,7 @@ function Library:Panel(opts)
 			BorderSizePixel = 0,
 			LayoutOrder = 2,
 			Parent = stack,
+			ThemeTag = { BackgroundColor3 = "BorderSoft" },
 		})
 	end
 
@@ -4131,6 +4189,7 @@ function Library:CreateHotkeyPanel(opts)
 		BorderSizePixel = 0,
 		Active = true,
 		Parent = gui,
+		ThemeTag = { BackgroundColor3 = "Section" },
 	})
 	Corner(panel, 8)
 	Stroke(panel, Theme.SectionBorder)
@@ -4164,6 +4223,7 @@ function Library:CreateHotkeyPanel(opts)
 		BorderSizePixel = 0,
 		LayoutOrder = 2,
 		Parent = inner,
+		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
 
 	local body = New("Frame", {
@@ -4373,6 +4433,7 @@ function Library:ServerBrowser(opts)
 		BorderSizePixel = 0,
 		Active = true,
 		Parent = gui,
+		ThemeTag = { BackgroundColor3 = "Window" },
 	})
 	Corner(main, 10)
 	Stroke(main, Theme.WindowBorder)
@@ -4402,6 +4463,7 @@ function Library:ServerBrowser(opts)
 		BackgroundColor3 = Theme.TopBar,
 		BorderSizePixel = 0,
 		Parent = main,
+		ThemeTag = { BackgroundColor3 = "TopBar" },
 	})
 	Corner(topBar, 10)
 	New("Frame", {
@@ -4410,6 +4472,7 @@ function Library:ServerBrowser(opts)
 		BackgroundColor3 = Theme.TopBar,
 		BorderSizePixel = 0,
 		Parent = topBar,
+		ThemeTag = { BackgroundColor3 = "TopBar" },
 	})
 	New("Frame", {
 		Size = UDim2.new(1, 0, 0, 1),
@@ -4417,6 +4480,7 @@ function Library:ServerBrowser(opts)
 		BackgroundColor3 = Theme.BorderSoft,
 		BorderSizePixel = 0,
 		Parent = topBar,
+		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
 
 	local heading = Label(topBar, opts.Title or "servers", Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
@@ -4463,6 +4527,7 @@ function Library:ServerBrowser(opts)
 			BackgroundColor3 = Theme.TextDim,
 			BorderSizePixel = 0,
 			Parent = closeBtn,
+			ThemeTag = { BackgroundColor3 = "TextDim" },
 		})
 		Corner(bar, 1)
 		closeBars[i] = bar
@@ -4481,6 +4546,7 @@ function Library:ServerBrowser(opts)
 		ScrollBarImageTransparency = 0.3,
 		VerticalScrollBarInset = Enum.ScrollBarInset.None,
 		Parent = main,
+		ThemeTag = { ScrollBarImageColor3 = "AccentDim" },
 	})
 	List(list, 6)
 	Pad(list, 2, 8, 2, 2)
@@ -4506,6 +4572,7 @@ function Library:ServerBrowser(opts)
 			BorderSizePixel = 0,
 			LayoutOrder = index,
 			Parent = list,
+			ThemeTag = { BackgroundColor3 = "Section" },
 		})
 		Corner(row, 6)
 		Stroke(row, Theme.SectionBorder)
@@ -4533,6 +4600,7 @@ function Library:ServerBrowser(opts)
 			BackgroundColor3 = Theme.Accent,
 			BorderSizePixel = 0,
 			Parent = row,
+			ThemeTag = { BackgroundColor3 = "Accent" },
 		})
 		Corner(joinFrame, 6)
 
@@ -4712,6 +4780,7 @@ function Library:CreateMobileButton(opts)
 		Text = "",
 		BorderSizePixel = 0,
 		Parent = gui,
+		ThemeTag = { BackgroundColor3 = "Section" },
 	})
 	Corner(button, 12)
 	Stroke(button, Theme.Border)
@@ -4723,6 +4792,7 @@ function Library:CreateMobileButton(opts)
 			BackgroundColor3 = Theme.Accent,
 			BorderSizePixel = 0,
 			Parent = button,
+			ThemeTag = { BackgroundColor3 = "Accent" },
 		})
 		Corner(bar, 1)
 	end
