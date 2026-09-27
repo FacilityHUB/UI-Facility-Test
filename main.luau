@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2201,7 +2203,7 @@ local function CreateSection(window, parent, title, order)
 			AutomaticSize = Enum.AutomaticSize.X,
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.fromOffset(12, 0),
-			BackgroundColor3 = Theme.Section,
+			BackgroundColor3 = Theme.Window,
 			AutoButtonColor = false,
 			Text = "",
 			ZIndex = 3,
