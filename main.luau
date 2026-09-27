@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -140,6 +142,9 @@ Library.AddonPaths = {
 }
 Library.Addons = {}
 Library.Painted = Painted
+-- "inline" : titre dans la carte (defaut)
+-- "border" : titre pose sur la bordure, facon fieldset
+Library.SectionTitleStyle = "inline"
 Library.RepaintHooks = {}
 
 function Library:SafeCallback(label, callback, ...)
@@ -161,7 +166,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.08-placeid"
+Library.Version = "2026.09.09-sectiontitle-6"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -2105,6 +2110,8 @@ local Section = setmetatable({}, { __index = Elements })
 Section.__index = Section
 
 local function CreateSection(window, parent, title, order)
+	local borderTitle = Library.SectionTitleStyle == "border"
+
 	local frame = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -2115,24 +2122,70 @@ local function CreateSection(window, parent, title, order)
 	})
 	Corner(frame, 7)
 	Stroke(frame, Theme.SectionBorder)
-	Pad(frame, 12, 14, 14, 14)
-	local frameList = List(frame, 0)
 
-	local header = New("TextButton", {
-		Size = UDim2.new(1, 0, 0, 22),
+	-- the padded, laid out area, kept separate so an absolutely positioned
+	-- title is not captured by the list layout
+	local inner = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
-		AutoButtonColor = false,
-		Text = "",
 		Parent = frame,
 	})
-	local htitle = Label(header, title, Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
-	htitle.Size = UDim2.new(1, -16, 1, 0)
-	local hchev = Chevron(header, Theme.TextDim)
-	hchev.AnchorPoint = Vector2.new(0, 0.5)
-	hchev.Position = UDim2.new(0, htitle.TextBounds.X + 6, 0.5, 1)
-	Track(htitle:GetPropertyChangedSignal("TextBounds"):Connect(function()
+	Pad(inner, borderTitle and 18 or 12, 14, 14, 14)
+	local frameList = List(inner, 0)
+
+	local header, htitle, hchev
+
+	if borderTitle then
+		-- the title sits on the stroke, its own background hides the line
+		header = New("TextButton", {
+			Size = UDim2.fromOffset(0, 16),
+			AutomaticSize = Enum.AutomaticSize.X,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromOffset(12, 0),
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Text = "",
+			ZIndex = 3,
+			Parent = frame,
+		})
+		Pad(header, 0, 6, 0, 6)
+
+		local row = New("Frame", {
+			Size = UDim2.new(0, 0, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundTransparency = 1,
+			ZIndex = 3,
+			Parent = header,
+		})
+		local rowList = List(row, 5, Enum.FillDirection.Horizontal)
+		rowList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+		htitle = Label(row, title, Theme.TextBright, Theme.TextSize, Theme.FontMedium)
+		htitle.Size = UDim2.new(0, 0, 1, 0)
+		htitle.AutomaticSize = Enum.AutomaticSize.X
+		htitle.ZIndex = 3
+
+		hchev = Chevron(row, Theme.TextDim)
+		hchev.LayoutOrder = 2
+		hchev.ZIndex = 3
+	else
+		header = New("TextButton", {
+			Size = UDim2.new(1, 0, 0, 22),
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Text = "",
+			Parent = inner,
+		})
+		htitle = Label(header, title, Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
+		htitle.Size = UDim2.new(1, -16, 1, 0)
+		hchev = Chevron(header, Theme.TextDim)
+		hchev.AnchorPoint = Vector2.new(0, 0.5)
 		hchev.Position = UDim2.new(0, htitle.TextBounds.X + 6, 0.5, 1)
-	end))
+		Track(htitle:GetPropertyChangedSignal("TextBounds"):Connect(function()
+			hchev.Position = UDim2.new(0, htitle.TextBounds.X + 6, 0.5, 1)
+		end))
+	end
 
 	local body = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
@@ -2140,7 +2193,7 @@ local function CreateSection(window, parent, title, order)
 		BackgroundTransparency = 1,
 		ClipsDescendants = false,
 		LayoutOrder = 2,
-		Parent = frame,
+		Parent = inner,
 	})
 	local content = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
@@ -2224,7 +2277,7 @@ function Tab:Block()
 			LayoutOrder = i,
 			Parent = block,
 		})
-		List(frame, 14)
+		List(frame, Library.SectionTitleStyle == "border" and 22 or 14)
 		self.Columns[i] = setmetatable({ Window = self.Window, Frame = frame, Order = 0 }, Column)
 	end
 
@@ -2341,9 +2394,9 @@ function Window:Tab(name, icon)
 		Visible = false,
 		Parent = self.Body,
 	})
-	local pageList = List(page, 14)
+	local pageList = List(page, Library.SectionTitleStyle == "border" and 22 or 14)
 	pageList.SortOrder = Enum.SortOrder.LayoutOrder
-	Pad(page, 2, 8, 2, 8)
+	Pad(page, Library.SectionTitleStyle == "border" and 12 or 2, 8, 2, 8)
 
 	local tab = setmetatable({
 		Window = self,
@@ -4432,21 +4485,21 @@ function Library:ServerBrowser(opts)
 		Track(joinBtn.Activated:Connect(function()
 			Library:Notify(opts.Title or "servers", "teleporting...", 3)
 
-			-- TeleportAsync is the modern API and passes where the legacy
-			-- one is refused, fall back if it is unavailable or fails
-			local ok = pcall(function()
-				local teleportOptions = Instance.new("TeleportOptions")
-				teleportOptions.ServerInstanceId = server.id
-				TeleportService:TeleportAsync(placeId, { player }, teleportOptions)
+			-- Games that route teleports through their own server reject a
+			-- direct client call, OnJoin lets the script use their module
+			if opts.OnJoin then
+				Library:SafeCallback("server browser", opts.OnJoin, server.id, placeId, server)
+				return
+			end
+
+			-- TeleportAsync is server side only, the client must use the
+			-- legacy call here
+			local ok, err = pcall(function()
+				TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
 			end)
 
 			if not ok then
-				local legacy = pcall(function()
-					TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
-				end)
-				if not legacy then
-					Library:Error(opts.Title or "servers", "teleport refused by the game.", 5)
-				end
+				Library:Error(opts.Title or "servers", tostring(err), 6)
 			end
 		end))
 	end
