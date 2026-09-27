@@ -1,4 +1,3 @@
---
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -4129,7 +4128,7 @@ function Library:Watermark(opts)
 	ParentGui(gui)
 
 	local card = New("Frame", {
-		Size = UDim2.fromOffset(opts.Width or 250, 66),
+		Size = UDim2.fromOffset(opts.Width or 250, 74),
 		AutomaticSize = Enum.AutomaticSize.None,
 		Position = opts.Position or UDim2.fromOffset(18, 18),
 		BackgroundColor3 = Theme.Section,
@@ -4139,7 +4138,7 @@ function Library:Watermark(opts)
 	})
 	Corner(card, 10)
 	Stroke(card, Theme.SectionBorder)
-	Pad(card, 11, 16, 11, 16)
+	Pad(card, 12, 16, 12, 16)
 
 	local stack = New("Frame", {
 		Size = UDim2.new(0, 0, 1, 0),
@@ -4147,7 +4146,7 @@ function Library:Watermark(opts)
 		BackgroundTransparency = 1,
 		Parent = card,
 	})
-	List(stack, 6)
+	List(stack, 8)
 
 	-- top row : title and user
 	local topRow = New("Frame", {
@@ -4156,7 +4155,7 @@ function Library:Watermark(opts)
 		Parent = stack,
 	})
 
-	local titleLabel = Label(topRow, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 3, Theme.FontMedium)
+	local titleLabel = Label(topRow, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
 	titleLabel.Position = UDim2.fromOffset(0, 0)
 	titleLabel.Size = UDim2.new(0.5, 0, 1, 0)
 
@@ -4177,7 +4176,7 @@ function Library:Watermark(opts)
 
 	-- bottom row : fps, ping, uptime
 	local statsRow = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 18),
+		Size = UDim2.new(1, 0, 0, 20),
 		BackgroundTransparency = 1,
 		LayoutOrder = 2,
 		Parent = stack,
@@ -4209,7 +4208,7 @@ function Library:Watermark(opts)
 	end
 
 	local function unit(text)
-		local label = Label(statsRow, text, Theme.TextDim, Theme.TextSize - 1)
+		local label = Label(statsRow, text, Theme.TextDim, Theme.TextSize)
 		label.Size = UDim2.new(0, 0, 1, 0)
 		label.AutomaticSize = Enum.AutomaticSize.X
 		label.LayoutOrder = nextOrder()
@@ -4217,7 +4216,7 @@ function Library:Watermark(opts)
 	end
 
 	local function value(color)
-		local label = Label(statsRow, "0", color, Theme.TextSize + 1, Theme.FontMedium)
+		local label = Label(statsRow, "0", color, Theme.TextSize, Theme.FontMedium)
 		label.Size = UDim2.new(0, 0, 1, 0)
 		label.AutomaticSize = Enum.AutomaticSize.X
 		label.LayoutOrder = nextOrder()
@@ -4905,223 +4904,3 @@ function Library:ToggleUI(state)
 	self.Open = state
 	for _, window in ipairs(self.Windows) do
 		window:SetVisible(state)
-	end
-	self:RefreshCursor()
-	return self.Open
-end
-
-function Library:CreateMobileButton(opts)
-	if self.MobileGui then return self.MobileButton end
-	opts = opts or {}
-
-	local gui = New("ScreenGui", {
-		Name = RandomName(),
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		AutoLocalize = false,
-		DisplayOrder = MAX_DISPLAY_ORDER,
-	})
-	ParentGui(gui)
-
-	local button = New("TextButton", {
-		Size = UDim2.fromOffset(opts.Size or 44, opts.Size or 44),
-		Position = opts.Position or UDim2.new(0, 18, 0.5, -22),
-		BackgroundColor3 = Theme.Section,
-		AutoButtonColor = false,
-		Text = "",
-		BorderSizePixel = 0,
-		Parent = gui,
-	})
-	Corner(button, 12)
-	Stroke(button, Theme.Border)
-	for i = 1, 3 do
-		local bar = New("Frame", {
-			Size = UDim2.fromOffset(18, 2),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.5, (i - 2) * 6),
-			BackgroundColor3 = Theme.Accent,
-			BorderSizePixel = 0,
-			Parent = button,
-		})
-		Corner(bar, 1)
-	end
-
-	local moved, origin, startPos, moveConn, endConn
-	local pressing = false
-	local lastToggle = 0
-
-	Track(button.InputBegan:Connect(function(input)
-		if input.UserInputType ~= Enum.UserInputType.MouseButton1
-			and input.UserInputType ~= Enum.UserInputType.Touch then return end
-		-- touch also emits a mouse event on mobile, ignore the duplicate
-		if pressing then return end
-		pressing = true
-
-		moved = false
-		origin = input.Position
-		startPos = button.Position
-		Tween(button, { BackgroundColor3 = Theme.FieldHover }, EASE_FAST)
-
-		moveConn = UserInputService.InputChanged:Connect(function(move)
-			if move.UserInputType ~= Enum.UserInputType.MouseMovement
-				and move.UserInputType ~= Enum.UserInputType.Touch then return end
-			local delta = move.Position - origin
-			if math.abs(delta.X) > 6 or math.abs(delta.Y) > 6 then moved = true end
-			button.Position = UDim2.new(
-				startPos.X.Scale, startPos.X.Offset + delta.X,
-				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end)
-
-		endConn = UserInputService.InputEnded:Connect(function(ended)
-			if ended.UserInputType ~= Enum.UserInputType.MouseButton1
-				and ended.UserInputType ~= Enum.UserInputType.Touch then return end
-			if moveConn then moveConn:Disconnect() moveConn = nil end
-			if endConn then endConn:Disconnect() endConn = nil end
-			pressing = false
-			Tween(button, { BackgroundColor3 = Theme.Section }, EASE_FAST)
-
-			if not moved and (tick() - lastToggle) > 0.25 then
-				lastToggle = tick()
-				Library:ToggleUI()
-			end
-		end)
-	end))
-
-	self.MobileGui = gui
-	self.MobileButton = button
-	return button
-end
-
-function Library:SetMobileButtonVisible(state)
-	if not self.MobileGui then
-		if not state then return end
-		self:CreateMobileButton()
-	end
-	self.MobileGui.Enabled = state and true or false
-end
-
-Track(UserInputService.InputBegan:Connect(function(input, gpe)
-	if gpe or Library.Binding then return end
-	local hit = (Library.ToggleKey ~= nil and input.KeyCode == Library.ToggleKey)
-		or (Library.ToggleInput ~= nil and input.UserInputType == Library.ToggleInput)
-	if hit then
-		Library:ToggleUI()
-	end
-end))
-
-function Library:Destroy()
-	for _, conn in ipairs(self.Connections) do
-		pcall(function() conn:Disconnect() end)
-	end
-	table.clear(self.Connections)
-	for _, w in ipairs(self.Windows) do
-		w.Gui:Destroy()
-	end
-	table.clear(self.Windows)
-	if self.NotifyGui then self.NotifyGui:Destroy() self.NotifyGui = nil end
-	if self.MobileGui then self.MobileGui:Destroy() self.MobileGui = nil self.MobileButton = nil end
-	if self.CursorBind then
-		pcall(function() RunService:UnbindFromRenderStep(self.CursorBind) end)
-		self.CursorBind = nil
-	end
-	if self.CursorGui then self.CursorGui:Destroy() self.CursorGui = nil self.CursorHolder = nil end
-	if self.ServerBrowserApi then pcall(function() self.ServerBrowserApi.Gui:Destroy() end) self.ServerBrowserApi = nil end
-	if self.WatermarkApi then pcall(function() self.WatermarkApi.Gui:Destroy() end) self.WatermarkApi = nil end
-	if self.HotkeyGui then self.HotkeyGui:Destroy() self.HotkeyGui = nil self.HotkeyPanel = nil end
-	for index = #self.Panels, 1, -1 do
-		pcall(function() self.Panels[index].Gui:Destroy() end)
-		self.Panels[index] = nil
-	end
-	table.clear(self.HotkeyEntries)
-	table.clear(self.Registry)
-	table.clear(self.Flags)
-end
-
-local HttpService = game:GetService("HttpService")
-
-local FileSystem = {}
-FileSystem.Memory = {}
-FileSystem.Native = typeof(writefile) == "function" and typeof(readfile) == "function"
-
-function FileSystem:MakeFolder(path)
-	if not self.Native then return end
-	if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
-		local ok, exists = pcall(isfolder, path)
-		if ok and not exists then pcall(makefolder, path) end
-	end
-end
-
-function FileSystem:Write(path, text)
-	if self.Native and pcall(writefile, path, text) then
-		self.Memory[path] = nil
-		return true
-	end
-	self.Memory[path] = text
-	return true
-end
-
-function FileSystem:Read(path)
-	if self.Native and typeof(isfile) == "function" then
-		local ok, exists = pcall(isfile, path)
-		if ok and exists then
-			local read, data = pcall(readfile, path)
-			if read then return data end
-		end
-	end
-	return self.Memory[path]
-end
-
-function FileSystem:Delete(path)
-	if self.Native and typeof(delfile) == "function" then pcall(delfile, path) end
-	self.Memory[path] = nil
-end
-
-function FileSystem:List(folder)
-	local names, seen = {}, {}
-	if self.Native and typeof(listfiles) == "function" then
-		local ok, files = pcall(listfiles, folder)
-		if ok and files then
-			for _, full in ipairs(files) do
-				local name = string.match(full, "[^/\\]+$")
-				if name and not seen[name] then
-					seen[name] = true
-					table.insert(names, name)
-				end
-			end
-		end
-	end
-	for path in pairs(self.Memory) do
-		if string.sub(path, 1, #folder + 1) == folder .. "/" then
-			local name = string.match(path, "[^/\\]+$")
-			if name and not seen[name] then
-				seen[name] = true
-				table.insert(names, name)
-			end
-		end
-	end
-	table.sort(names)
-	return names
-end
-
-function Library:BuildFolders(folder)
-	local path = ""
-	for _, part in ipairs(string.split(folder, "/")) do
-		path = path == "" and part or (path .. "/" .. part)
-		FileSystem:MakeFolder(path)
-	end
-	FileSystem:MakeFolder(folder .. "/configs")
-	FileSystem:MakeFolder(folder .. "/settings")
-	return folder
-end
-
-Library.FileSystem = FileSystem
-
-if getgenv then
-	pcall(function() getgenv().Facility = Library end)
-end
-Library.SaveManager = Library:LoadAddon("SaveManager")
-Library.InterfaceManager = Library:LoadAddon("InterfaceManager")
-Library.ThemeManager = Library:LoadAddon("ThemeManager")
-
-return Library
