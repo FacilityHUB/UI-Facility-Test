@@ -1,4 +1,6 @@
---1
+-- Facility addon | ThemeManager
+-- Presets de couleurs, edition par element, recoloration a chaud.
+
 return function(Library)
 	local HttpService = game:GetService("HttpService")
 	local Theme = Library.Theme
