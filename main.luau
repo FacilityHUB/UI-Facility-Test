@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2203,13 +2201,25 @@ local function CreateSection(window, parent, title, order)
 			AutomaticSize = Enum.AutomaticSize.X,
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.fromOffset(12, 0),
-			BackgroundColor3 = Theme.Window,
+			BackgroundTransparency = 1,
 			AutoButtonColor = false,
 			Text = "",
 			ZIndex = 3,
 			Parent = frame,
 		})
 		Pad(header, 0, 6, 0, 6)
+
+		-- a thin strip on the stroke line only, so the title reads as a
+		-- notch in the border instead of a chip sitting on the card
+		New("Frame", {
+			Size = UDim2.new(1, 0, 0, 3),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundColor3 = Theme.Window,
+			BorderSizePixel = 0,
+			ZIndex = 2,
+			Parent = header,
+		})
 
 		local row = New("Frame", {
 			Size = UDim2.new(0, 0, 1, 0),
