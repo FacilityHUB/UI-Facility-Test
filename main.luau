@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -123,6 +125,27 @@ local function IndexTheme()
 	end
 end
 IndexTheme()
+
+local function TagInstance(inst, props)
+	local entry = Painted[inst]
+	if not entry then
+		entry = {}
+		Painted[inst] = entry
+		PaintedCount = PaintedCount + 1
+	end
+	for property, key in pairs(props) do
+		if key == false then
+			entry[property] = nil
+		else
+			entry[property] = key
+			local color = Theme[key]
+			if color ~= nil then
+				pcall(function() inst[property] = color end)
+			end
+		end
+	end
+	return inst
+end
 
 local Library = {}
 Library.Theme = Theme
@@ -331,27 +354,6 @@ end
 local function Track(conn)
 	table.insert(Library.Connections, conn)
 	return conn
-end
-
-local function TagInstance(inst, props)
-	local entry = Painted[inst]
-	if not entry then
-		entry = {}
-		Painted[inst] = entry
-		PaintedCount = PaintedCount + 1
-	end
-	for property, key in pairs(props) do
-		if key == false then
-			entry[property] = nil
-		else
-			entry[property] = key
-			local color = Theme[key]
-			if color ~= nil then
-				pcall(function() inst[property] = color end)
-			end
-		end
-	end
-	return inst
 end
 
 local function New(class, props, children)
@@ -2969,6 +2971,10 @@ function Library:Window(opts)
 				end
 			end
 		end
+
+		-- the value to key map must follow, otherwise every element built
+		-- from here on is never recorded in the repaint registry
+		IndexTheme()
 	end)
 
 	-- ---- Discord RPC ----
