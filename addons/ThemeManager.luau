@@ -1,5 +1,4 @@
 -- Facility addon | ThemeManager
--- Presets de couleurs, edition par element, recoloration a chaud.
 
 return function(Library)
 	local HttpService = game:GetService("HttpService")
@@ -204,7 +203,9 @@ return function(Library)
 			defaults[entry[1]] = Theme[entry[1]]
 		end
 
-		local modal = window:Modal({ Title = "theme", Width = 300, Height = 0.82 })
+		-- no scrim: the interface behind has to stay readable while its
+		-- colours are being edited
+		local modal = window:Modal({ Title = "theme", Width = 300, Height = 0.82, Dim = 0, Blur = 0 })
 		local content = modal.Content
 		local pickers = {}
 		local presetBox
