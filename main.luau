@@ -1,3 +1,4 @@
+--
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -4128,8 +4129,8 @@ function Library:Watermark(opts)
 	ParentGui(gui)
 
 	local card = New("Frame", {
-		Size = UDim2.fromOffset(0, 66),
-		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(opts.Width or 250, 66),
+		AutomaticSize = Enum.AutomaticSize.None,
 		Position = opts.Position or UDim2.fromOffset(18, 18),
 		BackgroundColor3 = Theme.Section,
 		BorderSizePixel = 0,
@@ -4154,30 +4155,25 @@ function Library:Watermark(opts)
 		BackgroundTransparency = 1,
 		Parent = stack,
 	})
-	local topList = List(topRow, 7, Enum.FillDirection.Horizontal)
-	topList.VerticalAlignment = Enum.VerticalAlignment.Center
-
-	local brandIcon = AttachIcon(topRow, opts.Icon or "zap", Theme.Accent, 16)
-	if brandIcon then
-		brandIcon.Position = UDim2.fromOffset(0, 0)
-		brandIcon.LayoutOrder = 0
-	end
 
 	local titleLabel = Label(topRow, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 3, Theme.FontMedium)
-	titleLabel.Size = UDim2.new(0, 0, 1, 0)
-	titleLabel.AutomaticSize = Enum.AutomaticSize.X
-	titleLabel.LayoutOrder = 1
-
-	local userIcon = AttachIcon(topRow, "user", Theme.TextDim, 13)
-	if userIcon then
-		userIcon.Position = UDim2.fromOffset(0, 0)
-		userIcon.LayoutOrder = 2
-	end
+	titleLabel.Position = UDim2.fromOffset(0, 0)
+	titleLabel.Size = UDim2.new(0.5, 0, 1, 0)
 
 	local userLabel = Label(topRow, opts.User or (Players.LocalPlayer and Players.LocalPlayer.Name) or "", Theme.TextDim, Theme.TextSize)
-	userLabel.Size = UDim2.new(0, 0, 1, 0)
-	userLabel.AutomaticSize = Enum.AutomaticSize.X
-	userLabel.LayoutOrder = 3
+	userLabel.AnchorPoint = Vector2.new(1, 0)
+	userLabel.Position = UDim2.fromScale(1, 0)
+	userLabel.Size = UDim2.new(0.5, 0, 1, 0)
+	userLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+	-- full width divider between the two rows
+	New("Frame", {
+		Size = UDim2.new(1, 0, 0, 1),
+		BackgroundColor3 = Theme.BorderSoft,
+		BorderSizePixel = 0,
+		LayoutOrder = 1,
+		Parent = stack,
+	})
 
 	-- bottom row : fps, ping, uptime
 	local statsRow = New("Frame", {
@@ -4195,13 +4191,21 @@ function Library:Watermark(opts)
 		return order
 	end
 
-	local function icon(name, color)
-		local img = AttachIcon(statsRow, name, color, 14)
+	local function icon(name)
+		local img = AttachIcon(statsRow, name, Theme.TextDim, 14)
 		if img then
 			img.Position = UDim2.fromOffset(0, 0)
 			img.LayoutOrder = nextOrder()
 		end
 		return img
+	end
+
+	local function separator()
+		local bar = Label(statsRow, "|", Theme.BorderSoft, Theme.TextSize)
+		bar.Size = UDim2.new(0, 0, 1, 0)
+		bar.AutomaticSize = Enum.AutomaticSize.X
+		bar.LayoutOrder = nextOrder()
+		return bar
 	end
 
 	local function unit(text)
@@ -4220,15 +4224,19 @@ function Library:Watermark(opts)
 		return label
 	end
 
-	icon("activity", Theme.TextMarked)
+	icon("activity")
 	local fpsValue = value(Theme.TextMarked)
 	unit("fps")
 
-	icon("wifi", Theme.TextCode)
+	separator()
+
+	icon("wifi")
 	local pingValue = value(Theme.TextCode)
 	unit("ms")
 
-	icon("clock", Theme.Text)
+	separator()
+
+	icon("clock")
 	local timeValue = value(Theme.Text)
 
 	-- drag
