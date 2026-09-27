@@ -1,3 +1,5 @@
+-- 1
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -3337,7 +3339,7 @@ function Library:Window(opts)
 	local gui = New("ScreenGui", {
 		Name = RandomName(),
 		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		ZIndexBehavior = Enum.ZIndexBehavior.Global,
 		AutoLocalize = false,
 		IgnoreGuiInset = true,
 		DisplayOrder = MAX_DISPLAY_ORDER,
@@ -3351,32 +3353,22 @@ function Library:Window(opts)
 		BackgroundColor3 = Theme.Window,
 		BackgroundTransparency = Theme.WindowAlpha,
 		BorderSizePixel = 0,
+		ZIndex = 2,
 		Parent = gui,
 	})
-	-- the shadow must be a sibling, a child cannot render behind its parent
-	-- when the ScreenGui uses Sibling ZIndexBehavior
+	-- the shadow is a sibling wrapper: main is reparented into it so the
+	-- glow always sits behind the window and follows it for free
 	local shadow = New("ImageLabel", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Size = UDim2.new(1.6, 0, 1.4, 0),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1.5, 0, 1.45, 0),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://5587865193",
 		ImageColor3 = Color3.fromRGB(0, 0, 0),
 		ImageTransparency = 0.62,
 		ZIndex = 0,
-		Parent = gui,
+		Parent = main,
 	})
-	local function syncShadow()
-		shadow.Position = UDim2.new(
-			main.Position.X.Scale, main.Position.X.Offset + main.AbsoluteSize.X / 2,
-			main.Position.Y.Scale, main.Position.Y.Offset + main.AbsoluteSize.Y / 2)
-		shadow.Size = UDim2.fromOffset(main.AbsoluteSize.X * 1.5, main.AbsoluteSize.Y * 1.45)
-	end
-	syncShadow()
-	Track(main:GetPropertyChangedSignal("Position"):Connect(syncShadow))
-	Track(main:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncShadow))
-	Track(main:GetPropertyChangedSignal("Visible"):Connect(function()
-		shadow.Visible = main.Visible
-	end))
 
 	Corner(main, 10)
 	Stroke(main, Theme.WindowBorder)
