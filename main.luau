@@ -1,5 +1,3 @@
--- 1
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -2203,7 +2201,7 @@ local function CreateSection(window, parent, title, order)
 			AutomaticSize = Enum.AutomaticSize.X,
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.fromOffset(12, 0),
-			BackgroundTransparency = 1,
+			BackgroundColor3 = Theme.Section,
 			AutoButtonColor = false,
 			Text = "",
 			ZIndex = 3,
@@ -3339,7 +3337,7 @@ function Library:Window(opts)
 	local gui = New("ScreenGui", {
 		Name = RandomName(),
 		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Global,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		AutoLocalize = false,
 		IgnoreGuiInset = true,
 		DisplayOrder = MAX_DISPLAY_ORDER,
@@ -3353,23 +3351,8 @@ function Library:Window(opts)
 		BackgroundColor3 = Theme.Window,
 		BackgroundTransparency = Theme.WindowAlpha,
 		BorderSizePixel = 0,
-		ZIndex = 2,
 		Parent = gui,
 	})
-	-- the shadow is a sibling wrapper: main is reparented into it so the
-	-- glow always sits behind the window and follows it for free
-	local shadow = New("ImageLabel", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1.5, 0, 1.45, 0),
-		BackgroundTransparency = 1,
-		Image = "rbxassetid://5587865193",
-		ImageColor3 = Color3.fromRGB(0, 0, 0),
-		ImageTransparency = 0.62,
-		ZIndex = 0,
-		Parent = main,
-	})
-
 	Corner(main, 10)
 	Stroke(main, Theme.WindowBorder)
 	local scale = New("UIScale", { Parent = main })
@@ -3414,6 +3397,12 @@ function Library:Window(opts)
 		BorderSizePixel = 0,
 		Parent = topBar,
 	})
+
+	if opts.SectionTitleStyle == "border" or opts.SectionTitle == "border" then
+		Library.SectionTitleStyle = "border"
+	elseif opts.SectionTitleStyle == "inline" or opts.SectionTitle == "inline" then
+		Library.SectionTitleStyle = "inline"
+	end
 
 	local tabStyle = (opts.TabStyle == "side" or opts.CategoryMod == 2) and "side" or "top"
 	local tabWidth = opts.TabWidth or 140
