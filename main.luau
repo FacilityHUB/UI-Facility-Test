@@ -193,7 +193,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.10-scrimfix"
+Library.Version = "2026.09.10-elements"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -624,6 +624,180 @@ Elements.__index = Elements
 
 local function NewContainer(window, frame, float)
 	return setmetatable({ Window = window, Container = frame, Float = float }, Elements)
+end
+
+function Elements:Image(opts)
+	opts = opts or {}
+
+	local height = opts.Height or 120
+	local holder = New("Frame", {
+		Size = UDim2.new(1, 0, 0, height),
+		BackgroundColor3 = Theme.Field,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "Field" },
+	})
+	Corner(holder, opts.Corner or 6)
+	if opts.Border ~= false then Stroke(holder, Theme.Border) end
+
+	local image = New("ImageLabel", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Image = opts.Image or "",
+		ScaleType = opts.ScaleType or Enum.ScaleType.Crop,
+		Parent = holder,
+	})
+
+	local api = { Instance = holder, Image = image }
+
+	function api:Set(asset)
+		image.Image = tostring(asset or "")
+		return self
+	end
+
+	-- a user id loads that player's headshot
+	function api:SetUser(userId, thumbType, size)
+		task.spawn(function()
+			local ok, content = pcall(function()
+				return Players:GetUserThumbnailAsync(
+					tonumber(userId) or 0,
+					thumbType or Enum.ThumbnailType.HeadShot,
+					size or Enum.ThumbnailSize.Size150x150)
+			end)
+			if ok and content then image.Image = content end
+		end)
+		return self
+	end
+
+	function api:SetHeight(value)
+		holder.Size = UDim2.new(1, 0, 0, value)
+		return self
+	end
+
+	if opts.UserId then api:SetUser(opts.UserId) end
+	return api
+end
+
+function Elements:Table(opts)
+	opts = opts or {}
+
+	local columns = opts.Columns or { "column" }
+	local count = math.max(#columns, 1)
+	local maxRows = opts.MaxRows or 12
+	local rowHeight = opts.RowHeight or 18
+
+	local block = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Parent = self.Container,
+	})
+	List(block, 4)
+
+	local function buildRow(parent, order)
+		local row = New("Frame", {
+			Size = UDim2.new(1, 0, 0, rowHeight),
+			BackgroundTransparency = 1,
+			LayoutOrder = order,
+			Parent = parent,
+		})
+		local cells = {}
+		for index = 1, count do
+			local cell = Label(row, "", Theme.Text, Theme.TextSize - 1)
+			cell.Position = UDim2.fromScale((index - 1) / count, 0)
+			cell.Size = UDim2.new(1 / count, -6, 1, 0)
+			cell.TextTruncate = Enum.TextTruncate.AtEnd
+			if index > 1 and opts.AlignRight then
+				cell.TextXAlignment = Enum.TextXAlignment.Right
+			end
+			cells[index] = cell
+		end
+		return row, cells
+	end
+
+	-- header
+	local headerCells
+	if opts.Header ~= false then
+		local header
+		header, headerCells = buildRow(block, 1)
+		for index, cell in ipairs(headerCells) do
+			cell.Text = tostring(columns[index] or "")
+			cell.TextColor3 = Theme.TextDim
+			TagInstance(cell, { TextColor3 = "TextDim" })
+		end
+
+		New("Frame", {
+			Size = UDim2.new(1, 0, 0, 1),
+			BackgroundColor3 = Theme.BorderSoft,
+			BorderSizePixel = 0,
+			LayoutOrder = 2,
+			Parent = block,
+			ThemeTag = { BackgroundColor3 = "BorderSoft" },
+		})
+	end
+
+	local body = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = 3,
+		Parent = block,
+	})
+	List(body, 2)
+
+	local empty = Label(block, opts.EmptyText or "no data", Theme.TextDim, Theme.TextSize - 1)
+	empty.Size = UDim2.new(1, 0, 0, rowHeight)
+	empty.LayoutOrder = 4
+
+	local rows = {}
+	for index = 1, maxRows do
+		local row, cells = buildRow(body, index)
+		row.Visible = false
+		rows[index] = { Frame = row, Cells = cells }
+	end
+
+	local api = { Instance = block, Rows = rows }
+
+	function api:SetRows(data)
+		data = data or {}
+		local shown = 0
+
+		for index, row in ipairs(rows) do
+			local entry = data[index]
+			if entry then
+				shown = shown + 1
+				row.Frame.Visible = true
+				for cellIndex, cell in ipairs(row.Cells) do
+					local value = entry[cellIndex]
+					cell.Text = value ~= nil and tostring(value) or ""
+					local color = entry.Color or (entry.Colors and entry.Colors[cellIndex])
+					if typeof(color) == "Color3" then
+						cell.TextColor3 = color
+					elseif entry.Style then
+						cell.TextColor3 = StyleColor(entry.Style, Theme.Text)
+					end
+				end
+			else
+				row.Frame.Visible = false
+			end
+		end
+
+		empty.Visible = shown == 0
+		if headerCells then
+			for _, cell in ipairs(headerCells) do
+				cell.Visible = shown > 0 or opts.KeepHeader == true
+			end
+		end
+		return shown
+	end
+
+	function api:Clear()
+		return self:SetRows({})
+	end
+
+	api:SetRows(opts.Rows)
+	return api
 end
 
 function Elements:Divider()
