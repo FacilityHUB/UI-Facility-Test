@@ -1,4 +1,3 @@
---
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -4129,7 +4128,7 @@ function Library:Watermark(opts)
 	ParentGui(gui)
 
 	local card = New("Frame", {
-		Size = UDim2.fromOffset(0, 54),
+		Size = UDim2.fromOffset(0, 66),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Position = opts.Position or UDim2.fromOffset(18, 18),
 		BackgroundColor3 = Theme.Section,
@@ -4137,9 +4136,9 @@ function Library:Watermark(opts)
 		Active = true,
 		Parent = gui,
 	})
-	Corner(card, 8)
+	Corner(card, 10)
 	Stroke(card, Theme.SectionBorder)
-	Pad(card, 8, 14, 8, 14)
+	Pad(card, 11, 16, 11, 16)
 
 	local stack = New("Frame", {
 		Size = UDim2.new(0, 0, 1, 0),
@@ -4147,58 +4146,90 @@ function Library:Watermark(opts)
 		BackgroundTransparency = 1,
 		Parent = card,
 	})
-	List(stack, 4)
+	List(stack, 6)
 
 	-- top row : title and user
 	local topRow = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 17),
+		Size = UDim2.new(1, 0, 0, 20),
 		BackgroundTransparency = 1,
 		Parent = stack,
 	})
-	local topList = List(topRow, 8, Enum.FillDirection.Horizontal)
+	local topList = List(topRow, 7, Enum.FillDirection.Horizontal)
 	topList.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	local titleLabel = Label(topRow, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 1, Theme.FontMedium)
+	local brandIcon = AttachIcon(topRow, opts.Icon or "zap", Theme.Accent, 16)
+	if brandIcon then
+		brandIcon.Position = UDim2.fromOffset(0, 0)
+		brandIcon.LayoutOrder = 0
+	end
+
+	local titleLabel = Label(topRow, opts.Title or "facility", Theme.TextBright, Theme.TextSize + 3, Theme.FontMedium)
 	titleLabel.Size = UDim2.new(0, 0, 1, 0)
 	titleLabel.AutomaticSize = Enum.AutomaticSize.X
+	titleLabel.LayoutOrder = 1
 
-	local userLabel = Label(topRow, opts.User or (Players.LocalPlayer and Players.LocalPlayer.Name) or "", Theme.TextDim)
+	local userIcon = AttachIcon(topRow, "user", Theme.TextDim, 13)
+	if userIcon then
+		userIcon.Position = UDim2.fromOffset(0, 0)
+		userIcon.LayoutOrder = 2
+	end
+
+	local userLabel = Label(topRow, opts.User or (Players.LocalPlayer and Players.LocalPlayer.Name) or "", Theme.TextDim, Theme.TextSize)
 	userLabel.Size = UDim2.new(0, 0, 1, 0)
 	userLabel.AutomaticSize = Enum.AutomaticSize.X
-	userLabel.LayoutOrder = 2
+	userLabel.LayoutOrder = 3
 
 	-- bottom row : fps, ping, uptime
 	local statsRow = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 15),
+		Size = UDim2.new(1, 0, 0, 18),
 		BackgroundTransparency = 1,
 		LayoutOrder = 2,
 		Parent = stack,
 	})
-	local statsList = List(statsRow, 5, Enum.FillDirection.Horizontal)
+	local statsList = List(statsRow, 6, Enum.FillDirection.Horizontal)
 	statsList.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	local function unit(text, order)
-		local label = Label(statsRow, text, Theme.TextDim, Theme.TextSize - 2)
+	local order = 0
+	local function nextOrder()
+		order = order + 1
+		return order
+	end
+
+	local function icon(name, color)
+		local img = AttachIcon(statsRow, name, color, 14)
+		if img then
+			img.Position = UDim2.fromOffset(0, 0)
+			img.LayoutOrder = nextOrder()
+		end
+		return img
+	end
+
+	local function unit(text)
+		local label = Label(statsRow, text, Theme.TextDim, Theme.TextSize - 1)
 		label.Size = UDim2.new(0, 0, 1, 0)
 		label.AutomaticSize = Enum.AutomaticSize.X
-		label.LayoutOrder = order
+		label.LayoutOrder = nextOrder()
 		return label
 	end
 
-	local function value(color, order)
-		local label = Label(statsRow, "0", color, Theme.TextSize, Theme.FontMedium)
+	local function value(color)
+		local label = Label(statsRow, "0", color, Theme.TextSize + 1, Theme.FontMedium)
 		label.Size = UDim2.new(0, 0, 1, 0)
 		label.AutomaticSize = Enum.AutomaticSize.X
-		label.LayoutOrder = order
+		label.LayoutOrder = nextOrder()
 		return label
 	end
 
-	local fpsValue = value(Theme.TextMarked, 1)
-	unit("fps", 2)
-	local pingValue = value(Theme.TextCode, 3)
-	unit("ms", 4)
-	unit("-", 5)
-	local timeValue = value(Theme.Text, 6)
+	icon("activity", Theme.TextMarked)
+	local fpsValue = value(Theme.TextMarked)
+	unit("fps")
+
+	icon("wifi", Theme.TextCode)
+	local pingValue = value(Theme.TextCode)
+	unit("ms")
+
+	icon("clock", Theme.Text)
+	local timeValue = value(Theme.Text)
 
 	-- drag
 	do
