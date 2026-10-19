@@ -3942,8 +3942,62 @@ function Library:Window(opts)
 		Library:CreateMobileButton(opts.MobileButtonOptions)
 	end
 
+	New("TextButton", {
+		Name = RandomName(),
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		Modal = true,
+		Selectable = false,
+		Parent = main,
+	})
+
+	if opts.UnlockMouse == false then Library.UnlockMouse = false end
+
 	table.insert(Library.Windows, window)
+	Library:BindMouseUnlock()
 	return window
+end
+
+Library.UnlockMouse = true
+
+function Library:MenuOpen()
+	for _, w in ipairs(self.Windows) do
+		if w.Visible and w.Main and w.Main.Visible and w.Gui and w.Gui.Enabled ~= false then return true end
+	end
+	return false
+end
+
+function Library:ReleaseMouse()
+	local saved = self.MouseSaved
+	if not saved then return end
+	self.MouseSaved = nil
+	pcall(function()
+		if UserInputService.MouseIconEnabled ~= saved.Icon then UserInputService.MouseIconEnabled = saved.Icon end
+	end)
+end
+
+function Library:BindMouseUnlock()
+	if self.MouseBind then return end
+	self.MouseBind = RandomName()
+
+	pcall(function() RunService:BindToRenderStep(self.MouseBind, Enum.RenderPriority.Last.Value, function()
+		if not (self.UnlockMouse and self:MenuOpen()) then
+			self:ReleaseMouse()
+			return
+		end
+
+		if not self.MouseSaved then
+			self.MouseSaved = { Icon = UserInputService.MouseIconEnabled }
+		end
+
+		if UserInputService.MouseBehavior ~= Enum.MouseBehavior.Default then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		end
+		if not self.CursorEnabled and not UserInputService.MouseIconEnabled then
+			UserInputService.MouseIconEnabled = true
+		end
+	end) end)
 end
 
 function Library:Notify(opts, text, duration)
@@ -5055,6 +5109,11 @@ Track(UserInputService.InputBegan:Connect(function(input, gpe)
 end))
 
 function Library:Destroy()
+	if self.MouseBind then
+		pcall(function() RunService:UnbindFromRenderStep(self.MouseBind) end)
+		self.MouseBind = nil
+	end
+	self:ReleaseMouse()
 	for _, conn in ipairs(self.Connections) do
 		pcall(function() conn:Disconnect() end)
 	end
