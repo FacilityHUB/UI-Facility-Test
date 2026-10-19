@@ -40,6 +40,8 @@ return function(Library)
 	ThemeManager.Order = {
 		"facility", "darker", "typewriter", "aqua",
 		"amethyst", "rose", "contrast", "light",
+		"crimson", "dark", "onyx", "emerald",
+		"toxic", "noir", "lagoon",
 	}
 
 	ThemeManager.Presets = {
@@ -51,6 +53,13 @@ return function(Library)
 		rose       = { Bg = Color3.fromRGB(30, 18, 22),    Accent = Color3.fromRGB(200, 120, 170) },
 		contrast   = { Bg = Color3.fromRGB(0, 0, 0),       Accent = Color3.fromRGB(86, 156, 214) },
 		light      = { Bg = Color3.fromRGB(238, 238, 240), Accent = Color3.fromRGB(0, 103, 192), Light = true },
+		crimson    = { Bg = Color3.fromRGB(19, 19, 19),    Accent = Color3.fromRGB(255, 24, 24) },
+		dark       = { Bg = Color3.fromRGB(24, 24, 26),    Accent = Color3.fromRGB(96, 205, 255) },
+		onyx       = { Bg = Color3.fromRGB(10, 10, 10),    Accent = Color3.fromRGB(235, 235, 235) },
+		emerald    = { Bg = Color3.fromRGB(14, 24, 19),    Accent = Color3.fromRGB(52, 211, 153) },
+		toxic      = { Bg = Color3.fromRGB(12, 18, 10),    Accent = Color3.fromRGB(166, 255, 0) },
+		noir       = { Bg = Color3.fromRGB(10, 8, 9),      Accent = Color3.fromRGB(255, 92, 150) },
+		lagoon     = { Bg = Color3.fromRGB(8, 20, 30),     Accent = Color3.fromRGB(34, 230, 222) },
 	}
 
 	local function shade(color, amount)
@@ -171,6 +180,9 @@ return function(Library)
 			return HttpService:JSONEncode({
 				Preset = self.Current,
 				Colors = colors,
+				Glass = self.Library.Glass == true,
+				GlassBlur = self.Library.GlassBlur ~= false,
+				GlassStrength = self.Library.GlassStrength or 1,
 			})
 		end)
 		if ok then self.Library.FileSystem:Write(self:Path(), encoded) end
@@ -184,6 +196,15 @@ return function(Library)
 		if not ok or type(data) ~= "table" then return false end
 
 		if data.Preset then self:Apply(data.Preset) end
+		if tonumber(data.GlassStrength) and self.Library.SetGlassStrength then
+			self.Library:SetGlassStrength(tonumber(data.GlassStrength))
+		end
+		if type(data.GlassBlur) == "boolean" and self.Library.SetGlassBlur then
+			self.Library:SetGlassBlur(data.GlassBlur)
+		end
+		if type(data.Glass) == "boolean" and self.Library.SetGlass then
+			self.Library:SetGlass(data.Glass)
+		end
 		for key, hex in pairs(data.Colors or {}) do
 			local color, alpha = fromHex(hex)
 			if color and Theme[key] ~= nil then
@@ -254,6 +275,46 @@ return function(Library)
 				end
 			end,
 		})
+
+		local glassToggle, blurToggle, strengthSlider
+		if self.Library.SetGlass then
+			glassToggle = content:Toggle({
+				Text = "glass",
+				Flag = false,
+				Default = self.Library.Glass == true,
+				Hint = "see-through panels",
+				Callback = function(state)
+					self.Library:SetGlass(state)
+					dirty = true
+					if self.AutoSave then self:Save() end
+				end,
+			})
+			blurToggle = content:Toggle({
+				Text = "glass blur",
+				Flag = false,
+				Default = self.Library.GlassBlur ~= false,
+				Hint = "blurs the game behind the window while glass is on",
+				Callback = function(state)
+					self.Library:SetGlassBlur(state)
+					dirty = true
+					if self.AutoSave then self:Save() end
+				end,
+			})
+			strengthSlider = content:Slider({
+				Text = "glass strength",
+				Flag = false,
+				Min = 0,
+				Max = 150,
+				Suffix = "%",
+				Default = math.floor((self.Library.GlassStrength or 1) * 100 + 0.5),
+				Callback = function(value)
+					self.Library:SetGlassStrength(value / 100)
+					dirty = true
+					if self.AutoSave then self:Save() end
+				end,
+			})
+		end
+		self.GlassToggle, self.BlurToggle, self.StrengthSlider = glassToggle, blurToggle, strengthSlider
 
 		content:Divider()
 
