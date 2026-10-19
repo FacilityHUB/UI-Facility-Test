@@ -1,3 +1,4 @@
+--
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -370,7 +371,7 @@ end
 
 local GLASS_ALPHA = {
 	Window = 0.32,
-	TopBar = 0.45,
+	TopBar = 1,
 	Section = 0.55,
 	Group = 0.58,
 	Field = 0.62,
@@ -391,6 +392,10 @@ local function ApplyGlass(inst)
 	local base = inst.BackgroundTransparency
 	if base >= 1 then return end
 	GlassSaved[inst] = base
+	if amount >= 1 then
+		inst.BackgroundTransparency = 1
+		return
+	end
 	amount = math.clamp(amount * (Library.GlassStrength or 1), 0, 0.95)
 	inst.BackgroundTransparency = base + (1 - base) * amount
 end
@@ -6388,5 +6393,26 @@ end
 Library.SaveManager = Library:LoadAddon("SaveManager")
 Library.InterfaceManager = Library:LoadAddon("InterfaceManager")
 Library.ThemeManager = Library:LoadAddon("ThemeManager")
+
+do
+	local manager = Library.ThemeManager
+	local extra = {
+		{ "crimson", Color3.fromRGB(19, 19, 19), Color3.fromRGB(255, 24, 24) },
+		{ "dark", Color3.fromRGB(24, 24, 26), Color3.fromRGB(96, 205, 255) },
+		{ "onyx", Color3.fromRGB(10, 10, 10), Color3.fromRGB(235, 235, 235) },
+		{ "emerald", Color3.fromRGB(14, 24, 19), Color3.fromRGB(52, 211, 153) },
+		{ "toxic", Color3.fromRGB(12, 18, 10), Color3.fromRGB(166, 255, 0) },
+		{ "noir", Color3.fromRGB(10, 8, 9), Color3.fromRGB(255, 92, 150) },
+		{ "lagoon", Color3.fromRGB(8, 20, 30), Color3.fromRGB(34, 230, 222) },
+	}
+	if type(manager) == "table" and type(manager.Presets) == "table" and type(manager.Order) == "table" then
+		for _, entry in ipairs(extra) do
+			if not manager.Presets[entry[1]] then
+				manager.Presets[entry[1]] = { Bg = entry[2], Accent = entry[3] }
+				table.insert(manager.Order, entry[1])
+			end
+		end
+	end
+end
 
 return Library
