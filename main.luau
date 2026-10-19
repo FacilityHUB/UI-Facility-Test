@@ -1,3 +1,4 @@
+-- 1
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
@@ -3717,7 +3718,7 @@ function Library:Window(opts)
 	Track(main:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs))
 	layoutTabs()
 
-	New("Frame", {
+	local topLine = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 1),
 		Position = UDim2.new(0, 0, 0, 46),
 		BackgroundColor3 = Theme.BorderSoft,
@@ -3725,6 +3726,16 @@ function Library:Window(opts)
 		Parent = main,
 		ThemeTag = { BackgroundColor3 = "BorderSoft" },
 	})
+
+	if tabStyle == "top" then
+		topLine.Visible = false
+		topBar.BackgroundTransparency = 1
+		for _, child in ipairs(topBar:GetChildren()) do
+			if child:IsA("Frame") and child ~= title and child ~= titleDivider and child.Size.Y.Offset == 12 then
+				child.BackgroundTransparency = 1
+			end
+		end
+	end
 
 	local shellLeft = tabStyle == "side" and (14 + tabWidth + 10) or 14
 	local shell = New("Frame", {
@@ -3753,6 +3764,7 @@ function Library:Window(opts)
 			BackgroundColor3 = Theme.BorderSoft,
 			BorderSizePixel = 0,
 			Parent = main,
+			Visible = tabStyle ~= "top",
 			ThemeTag = { BackgroundColor3 = "BorderSoft" },
 		})
 		footer = New("Frame", {
