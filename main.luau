@@ -27,6 +27,9 @@ local function GetPlayerGui()
 end
 
 local function ParentGui(gui)
+	if gui:IsA("ScreenGui") then
+		pcall(function() gui.OnTopOfCoreBlur = true end)
+	end
 	local ok = pcall(function()
 		if gethui then
 			gui.Parent = gethui()
@@ -85,7 +88,17 @@ local function AccentHex()
 		math.floor(Theme.Accent.B * 255 + 0.5))
 end
 
-local MAX_DISPLAY_ORDER = 2^53
+local MAX_DISPLAY_ORDER = 2147483647
+
+-- layers, highest draws last
+local ORDER_WINDOW    = MAX_DISPLAY_ORDER - 40
+local ORDER_PANEL     = MAX_DISPLAY_ORDER - 30
+local ORDER_BROWSER   = MAX_DISPLAY_ORDER - 25
+local ORDER_HOTKEYS   = MAX_DISPLAY_ORDER - 20
+local ORDER_MOBILE    = MAX_DISPLAY_ORDER - 15
+local ORDER_NOTIFY    = MAX_DISPLAY_ORDER - 10
+local ORDER_KEYSYSTEM = MAX_DISPLAY_ORDER - 5
+local ORDER_CURSOR    = MAX_DISPLAY_ORDER
 
 local EASE      = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local EASE_FAST = TweenInfo.new(0.10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -193,7 +206,7 @@ function Library:OnRepaint(callback)
 	return callback
 end
 Library.ThemeAlpha = ThemeAlpha
-Library.Version = "2026.09.10-elements"
+Library.Version = "2026.09.11-layers"
 
 function Library:LoadAddon(name)
 	if self.Addons[name] ~= nil then return self.Addons[name] end
@@ -658,14 +671,19 @@ function Elements:Image(opts)
 
 	-- a user id loads that player's headshot
 	function api:SetUser(userId, thumbType, size)
+		local id = tonumber(userId) or 0
+
+		-- rbxthumb resolves without an API call and works instantly
+		image.Image = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", id)
+
 		task.spawn(function()
 			local ok, content = pcall(function()
 				return Players:GetUserThumbnailAsync(
-					tonumber(userId) or 0,
+					id,
 					thumbType or Enum.ThumbnailType.HeadShot,
 					size or Enum.ThumbnailSize.Size150x150)
 			end)
-			if ok and content then image.Image = content end
+			if ok and content and content ~= "" then image.Image = content end
 		end)
 		return self
 	end
@@ -3294,7 +3312,7 @@ function Library:Window(opts)
 				IgnoreGuiInset = true,
 				AutoLocalize = false,
 				ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-				DisplayOrder = MAX_DISPLAY_ORDER,
+				DisplayOrder = ORDER_KEYSYSTEM,
 			})
 			ParentGui(gui)
 
@@ -3575,7 +3593,7 @@ function Library:Window(opts)
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		AutoLocalize = false,
 		IgnoreGuiInset = true,
-		DisplayOrder = MAX_DISPLAY_ORDER,
+		DisplayOrder = ORDER_WINDOW,
 	})
 	ParentGui(gui)
 
@@ -3955,7 +3973,7 @@ function Library:Notify(opts, text, duration)
 			IgnoreGuiInset = true,
 			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		AutoLocalize = false,
-			DisplayOrder = MAX_DISPLAY_ORDER,
+			DisplayOrder = ORDER_NOTIFY,
 		})
 		ParentGui(gui)
 		local holder = New("Frame", {
@@ -4103,12 +4121,11 @@ function Library:Panel(opts)
 		IgnoreGuiInset = true,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		AutoLocalize = false,
-		DisplayOrder = opts.DisplayOrder or 997,
+		DisplayOrder = opts.DisplayOrder or ORDER_PANEL,
 	})
 	ParentGui(gui)
 
 	gui.Name = RandomName()
-	gui.DisplayOrder = MAX_DISPLAY_ORDER
 	local root = New("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -4206,7 +4223,8 @@ function Library:Panel(opts)
 		AutoButtonColor = false,
 		Text = "",
 		Visible = false,
-		ZIndex = 310,
+		-- must stay under the floats it closes, they sit at 118 and above
+		ZIndex = 110,
 		Parent = overlay,
 	})
 
@@ -4352,7 +4370,7 @@ function Library:CreateHotkeyPanel(opts)
 		IgnoreGuiInset = true,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		AutoLocalize = false,
-		DisplayOrder = MAX_DISPLAY_ORDER,
+		DisplayOrder = ORDER_HOTKEYS,
 		Enabled = false,
 	})
 	ParentGui(gui)
@@ -4509,7 +4527,7 @@ function Library:CreateCursor(opts)
 		IgnoreGuiInset = true,
 		AutoLocalize = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		DisplayOrder = MAX_DISPLAY_ORDER,
+		DisplayOrder = ORDER_CURSOR,
 		Enabled = false,
 	})
 	ParentGui(gui)
@@ -4597,7 +4615,7 @@ function Library:ServerBrowser(opts)
 		IgnoreGuiInset = true,
 		AutoLocalize = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		DisplayOrder = MAX_DISPLAY_ORDER - 2,
+		DisplayOrder = ORDER_BROWSER,
 		Enabled = false,
 	})
 	ParentGui(gui)
@@ -4944,7 +4962,7 @@ function Library:CreateMobileButton(opts)
 		IgnoreGuiInset = true,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		AutoLocalize = false,
-		DisplayOrder = MAX_DISPLAY_ORDER,
+		DisplayOrder = ORDER_MOBILE,
 	})
 	ParentGui(gui)
 
