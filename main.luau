@@ -2967,6 +2967,7 @@ local Tab = {}
 Tab.__index = Tab
 
 function Tab:Block()
+	if self.SubTabs then return self.SubTabs[1]:Block() end
 	if self.CurrentBlock then return self.CurrentBlock end
 
 	self.Order = self.Order + 1
@@ -2998,12 +2999,14 @@ function Tab:Block()
 end
 
 function Tab:Column(index)
+	if self.SubTabs then return self.SubTabs[1]:Column(index) end
 	self:Block()
 	local slot = math.clamp(math.floor(tonumber(index) or 1), 1, #self.Columns)
 	return self.Columns[slot]
 end
 
 function Tab:Full(title)
+	if self.SubTabs then return self.SubTabs[1]:Full(title) end
 	self.Order = self.Order + 1
 	local section = CreateSection(self.Window, self.Page, title, self.Order)
 	self.CurrentBlock = nil
@@ -3015,6 +3018,271 @@ function Tab:Section(title, columnIndex)
 		return self:Full(title)
 	end
 	return self:Column(columnIndex):Section(title)
+end
+
+local SUBTAB_BAR = 30
+local SUBTAB_GAP = 8
+
+function Tab:_SubTabHost()
+	if self.SubTabs then return self.SubTabHost end
+
+	local window = self.Window
+	local scroll = self.Page
+	local host = New("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Visible = scroll.Visible,
+		Parent = scroll.Parent,
+	})
+
+	local bar = New("Frame", {
+		Size = UDim2.new(1, -16, 0, SUBTAB_BAR),
+		Position = UDim2.fromOffset(8, SUBTAB_GAP),
+		BackgroundColor3 = Theme.Field,
+		Parent = host,
+		ThemeTag = { BackgroundColor3 = "Field" },
+	})
+	Corner(bar, Theme.Radius)
+	New("UIStroke", {
+		Color = Theme.Border,
+		Thickness = 1,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = bar,
+		ThemeTag = { Color = "Border" },
+	})
+
+	local pill = New("Frame", {
+		Size = UDim2.new(0, 0, 1, -6),
+		Position = UDim2.fromOffset(3, 3),
+		BackgroundColor3 = Theme.Accent,
+		BackgroundTransparency = 0.84,
+		BorderSizePixel = 0,
+		Visible = false,
+		Parent = bar,
+		ThemeTag = { BackgroundColor3 = "Accent" },
+	})
+	Corner(pill, math.max(Theme.Radius - 2, 2))
+	New("UIStroke", {
+		Color = Theme.AccentDim,
+		Thickness = 1,
+		Transparency = 0.2,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = pill,
+		ThemeTag = { Color = "AccentDim" },
+	})
+
+	local row = New("Frame", {
+		Size = UDim2.new(1, -6, 1, -6),
+		Position = UDim2.fromOffset(3, 3),
+		BackgroundTransparency = 1,
+		ZIndex = 2,
+		Parent = bar,
+	})
+	List(row, 0, Enum.FillDirection.Horizontal)
+
+	scroll.Visible = true
+	scroll.Position = UDim2.new()
+	scroll.Size = UDim2.fromScale(1, 1)
+
+	local slide = New("Frame", {
+		Size = UDim2.new(1, 0, 1, -(SUBTAB_BAR + SUBTAB_GAP * 2)),
+		Position = UDim2.fromOffset(0, SUBTAB_BAR + SUBTAB_GAP * 2),
+		BackgroundTransparency = 1,
+		ClipsDescendants = true,
+		Parent = host,
+	})
+	scroll.Parent = slide
+
+	self.SubTabs = {}
+	self.SubTabHost = { Host = host, Bar = bar, Pill = pill, Row = row, Slide = slide, Base = scroll }
+	self.Page = host
+	return self.SubTabHost
+end
+
+function Tab:_LayoutSubTabs(animate)
+	local parts = self.SubTabHost
+	local count = #self.SubTabs
+	if count == 0 then return end
+	for index, sub in ipairs(self.SubTabs) do
+		sub.Button.Size = UDim2.new(1 / count, 0, 1, 0)
+		sub.Button.LayoutOrder = index
+	end
+	local active = self.ActiveSubTab
+	if not active then return end
+	local index = table.find(self.SubTabs, active) or 1
+	local goal = {
+		Position = UDim2.new((index - 1) / count, 3 - 6 * (index - 1) / count, 0, 3),
+		Size = UDim2.new(1 / count, -6 / count, 1, -6),
+	}
+	parts.Pill.Visible = true
+	if animate then
+		Tween(parts.Pill, goal, EASE)
+	else
+		parts.Pill.Position = goal.Position
+		parts.Pill.Size = goal.Size
+	end
+end
+
+function Tab:SubTab(name, icon)
+	assert(not self.IsSubTab, "SubTab: call it on the main tab, not on a sub tab")
+	local opts = type(name) == "table" and name or { Title = name, Icon = icon }
+	local title = opts.Title or opts.Text or "sub"
+	local window = self.Window
+	local parts = self:_SubTabHost()
+
+	local page
+	if #self.SubTabs == 0 then
+		page = parts.Base
+	else
+		page = New("ScrollingFrame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ScrollBarThickness = 3,
+			ScrollBarImageColor3 = Theme.AccentDim,
+			ScrollBarImageTransparency = 0.3,
+			VerticalScrollBarInset = Enum.ScrollBarInset.None,
+			Visible = false,
+			Parent = parts.Slide,
+			ThemeTag = { ScrollBarImageColor3 = "AccentDim" },
+		})
+		local pageList = List(page, Library.SectionTitleStyle == "border" and 22 or 14)
+		pageList.SortOrder = Enum.SortOrder.LayoutOrder
+		Pad(page, Library.SectionTitleStyle == "border" and 12 or 2, 8, 2, 8)
+		Track(page:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+			window:CloseFloating()
+		end))
+	end
+
+	local sub = setmetatable({
+		Window = window,
+		Page = page,
+		Columns = {},
+		Name = title,
+		Order = 0,
+		Parent = self,
+		IsSubTab = true,
+	}, Tab)
+	if page == parts.Base then
+		sub.Columns = self.Columns
+		sub.Order = self.Order
+		sub.CurrentBlock = self.CurrentBlock
+	end
+
+	local button = New("TextButton", {
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Text = "",
+		Parent = parts.Row,
+	})
+	local inner = New("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		AutomaticSize = Enum.AutomaticSize.X,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		BackgroundTransparency = 1,
+		Parent = button,
+	})
+	local innerList = List(inner, 6, Enum.FillDirection.Horizontal)
+	innerList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+	local glyph = AttachIcon(inner, opts.Icon, Theme.TextDim, 14)
+	if glyph then glyph.LayoutOrder = 1 end
+
+	local label = Label(inner, title, Theme.TextDim, Theme.TextSize)
+	label.Font = Theme.FontMedium or Theme.Font
+	label.Size = UDim2.new(0, 0, 1, 0)
+	label.AutomaticSize = Enum.AutomaticSize.X
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.LayoutOrder = 2
+
+	sub.Button = button
+	sub.Label = label
+	sub.Icon = glyph
+
+	function sub:SetActive(active, animate)
+		local info = animate and EASE_FAST or TweenInfo.new(0)
+		local key = active and "Accent" or "TextDim"
+		Library:Tag(label, { TextColor3 = key })
+		if glyph then Library:Tag(glyph, { ImageColor3 = key }) end
+		Tween(label, { TextColor3 = Theme[key] }, info)
+		if glyph then Tween(glyph, { ImageColor3 = Theme[key] }, info) end
+	end
+
+	function sub:Select()
+		self.Parent:SetSubTab(self)
+	end
+
+	table.insert(self.SubTabs, sub)
+	self:_LayoutSubTabs(false)
+
+	Track(button.Activated:Connect(function()
+		self:SetSubTab(sub)
+	end))
+	Track(button.MouseEnter:Connect(function()
+		if self.ActiveSubTab == sub then return end
+		Tween(label, { TextColor3 = Theme.Text }, EASE_FAST)
+		if glyph then Tween(glyph, { ImageColor3 = Theme.Text }, EASE_FAST) end
+	end))
+	Track(button.MouseLeave:Connect(function()
+		if self.ActiveSubTab == sub then return end
+		Tween(label, { TextColor3 = Theme.TextDim }, EASE_FAST)
+		if glyph then Tween(glyph, { ImageColor3 = Theme.TextDim }, EASE_FAST) end
+	end))
+
+	if not self.ActiveSubTab then
+		self:SetSubTab(sub, true)
+	else
+		sub:SetActive(false, false)
+	end
+	return sub
+end
+
+function Tab:SetSubTab(sub, instant)
+	if not self.SubTabs then return end
+	if type(sub) == "string" then
+		for _, entry in ipairs(self.SubTabs) do
+			if entry.Name == sub then sub = entry break end
+		end
+	end
+	if type(sub) ~= "table" or sub.Parent ~= self then return end
+	local previous = self.ActiveSubTab
+	if previous == sub then return end
+	self.Window:CloseFloating()
+
+	local oldIndex = previous and table.find(self.SubTabs, previous) or 0
+	local newIndex = table.find(self.SubTabs, sub) or 0
+	local direction = newIndex >= oldIndex and 1 or -1
+
+	if previous then
+		previous.Page.Visible = false
+		previous:SetActive(false, not instant)
+	end
+	self.ActiveSubTab = sub
+	sub.Page.Visible = true
+	if instant then
+		sub.Page.Position = UDim2.new()
+	else
+		sub.Page.Position = UDim2.fromOffset(18 * direction, 0)
+		Tween(sub.Page, { Position = UDim2.new() })
+	end
+	sub:SetActive(true, not instant)
+	self:_LayoutSubTabs(not instant)
+	if self.OnSubTab then Library:SafeCallback("subtab", self.OnSubTab, sub.Name) end
+end
+
+function Tab:PageFor(instance)
+	if not self.SubTabs then return self.Page end
+	for _, sub in ipairs(self.SubTabs) do
+		if instance:IsDescendantOf(sub.Page) then
+			self:SetSubTab(sub, true)
+			return sub.Page
+		end
+	end
+	return self.ActiveSubTab and self.ActiveSubTab.Page or self.Page
 end
 
 local Window = {}
@@ -4597,8 +4865,10 @@ function Library:Window(opts)
 				if not tab then return end
 				window:SetTab(tab)
 				task.delay(0.1, function()
-					local page, instance = tab.Page, entry.Instance
-					if not (page and instance.Parent) then return end
+					local instance = entry.Instance
+					if not instance.Parent then return end
+					local page = tab.PageFor and tab:PageFor(instance) or tab.Page
+					if not (page and page:IsA("ScrollingFrame")) then return end
 					local s = math.max(scale.Scale, 0.05)
 					local y = (instance.AbsolutePosition.Y - page.AbsolutePosition.Y) / s + page.CanvasPosition.Y - 24
 					page.CanvasPosition = Vector2.new(0, math.max(0, y))
